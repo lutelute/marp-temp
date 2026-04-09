@@ -23,6 +23,9 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 
+import subprocess
+import hashlib
+
 try:
     import cairosvg
     HAS_CAIROSVG = True
@@ -386,9 +389,62 @@ class PptxBuilder:
         self.prs.slide_height = SH
         self.base_path = base_path
         self._img_cache = {}
+        self._math_cache_dir = Path(tempfile.mkdtemp(prefix="marp_math_"))
+        self._render_script = base_path / "pptx" / "render_math.mjs"
+        if not self._render_script.exists():
+            # Try relative to this script
+            self._render_script = Path(__file__).parent / "render_math.mjs"
 
     def save(self, path: str):
         self.prs.save(path)
+
+    def _render_math(self, latex: str, display: bool = False, fontsize: int = 28) -> str | None:
+        """Render LaTeX to PNG via KaTeX + Playwright. Returns path to PNG."""
+        key = hashlib.md5(f"{latex}:{display}:{fontsize}".encode()).hexdigest()
+        png_path = self._math_cache_dir / f"{key}.png"
+        if png_path.exists():
+            return str(png_path)
+
+        if not self._render_script.exists():
+            return None
+
+        cmd = [
+            "node", str(self._render_script),
+            latex, str(png_path),
+            f"--fontsize={fontsize}",
+        ]
+        if display:
+            cmd.append("--display")
+
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=15, check=True)
+            if png_path.exists():
+                return str(png_path)
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError) as e:
+            print(f"  Math render failed: {latex[:40]}... ({e})", file=sys.stderr)
+        return None
+
+    def _add_math_image(self, slide, latex: str, left, top, max_width, display=True, fontsize=28):
+        """Render LaTeX and insert as image. Returns (width, height) in EMU or None."""
+        png = self._render_math(latex, display=display, fontsize=fontsize)
+        if not png:
+            return None
+        from PIL import Image
+        with Image.open(png) as im:
+            iw, ih = im.size
+        # Scale: 1 CSS px ≈ 12700 EMU at 96 DPI, but screenshots are 1:1 device px
+        # Use DPI-aware scaling
+        dpi = 96
+        pw = int(iw * 914400 / dpi)
+        ph = int(ih * 914400 / dpi)
+        # Scale down if too wide
+        if pw > max_width:
+            scale = max_width / pw
+            pw = int(pw * scale)
+            ph = int(ph * scale)
+        img_left = left + (max_width - pw) // 2  # center
+        slide.shapes.add_picture(png, img_left, top, pw, ph)
+        return (pw, ph)
 
     def _blank_slide(self):
         layout = self.prs.slide_layouts[6]  # Blank
@@ -701,49 +757,92 @@ class PptxBuilder:
         if sd.h1:
             self._add_title(slide, sd.h1)
 
-        # Main equation as large text
         eq_top = BODY_TOP + Inches(0.2)
-        tb = self._add_textbox(slide, MARGIN_L, eq_top, CONTENT_W, Inches(1.2))
-        tf = tb.text_frame
-        tf.word_wrap = True
-        p = tf.paragraphs[0]
-        p.text = sd.eq_main
-        p.font.name = FONT
-        p.font.size = Pt(28)
-        p.font.color.rgb = FG
-        p.alignment = PP_ALIGN.CENTER
 
-        # Variable descriptions
-        if sd.eq_vars:
-            var_top = eq_top + Inches(1.6)
-            var_tb = self._add_textbox(slide, Inches(2.5), var_top, Inches(8), Inches(3))
-            tf = var_tb.text_frame
+        # Main equation — render as KaTeX image
+        result = self._add_math_image(
+            slide, sd.eq_main,
+            MARGIN_L, eq_top, CONTENT_W,
+            display=True, fontsize=36
+        )
+        if result:
+            _, eq_h = result
+            var_top = eq_top + eq_h + Inches(0.3)
+        else:
+            # Fallback: plain text
+            tb = self._add_textbox(slide, MARGIN_L, eq_top, CONTENT_W, Inches(1.2))
+            tf = tb.text_frame
             tf.word_wrap = True
-            first = True
-            for sym, desc in sd.eq_vars:
-                if first:
-                    p = tf.paragraphs[0]
-                    first = False
+            p = tf.paragraphs[0]
+            p.text = sd.eq_main
+            p.font.name = FONT
+            p.font.size = Pt(28)
+            p.font.color.rgb = FG
+            p.alignment = PP_ALIGN.CENTER
+            var_top = eq_top + Inches(1.6)
+
+        # Variable descriptions — render each symbol as math image
+        if sd.eq_vars:
+            desc_left = Inches(2.0)
+            desc_w = Inches(9)
+            row_h = Inches(0.42)
+
+            for vi, (sym, desc) in enumerate(sd.eq_vars):
+                row_top = var_top + int(row_h * vi)
+
+                # Render symbol as inline math image
+                sym_latex = sym.strip()
+                if sym_latex.startswith("$"):
+                    sym_latex = sym_latex.strip("$")
+                sym_png = self._render_math(sym_latex, display=False, fontsize=22)
+
+                if sym_png:
+                    from PIL import Image
+                    with Image.open(sym_png) as im:
+                        sw, sh = im.size
+                    pw = int(sw * 914400 / 96)
+                    ph = int(sh * 914400 / 96)
+                    max_sym_w = Inches(1.8)
+                    if pw > max_sym_w:
+                        scale = max_sym_w / pw
+                        pw = int(pw * scale)
+                        ph = int(ph * scale)
+                    # Right-align symbol
+                    sym_right = desc_left + Inches(2.0)
+                    sym_x = sym_right - pw
+                    sym_y = row_top + (row_h - ph) // 2
+                    slide.shapes.add_picture(sym_png, sym_x, sym_y, pw, ph)
                 else:
-                    p = tf.add_paragraph()
+                    # Fallback text
+                    stb = self._add_textbox(slide, desc_left, row_top, Inches(2.0), row_h)
+                    p = stb.text_frame.paragraphs[0]
+                    p.text = sym
+                    p.font.name = FONT
+                    p.font.size = Pt(18)
+                    p.font.bold = True
+                    p.font.color.rgb = SECONDARY
+                    p.alignment = PP_ALIGN.RIGHT
 
-                run_sym = p.add_run()
-                run_sym.text = sym + "  "
-                run_sym.font.name = FONT
-                run_sym.font.size = Pt(18)
-                run_sym.font.bold = True
-                run_sym.font.color.rgb = SECONDARY
-
-                run_desc = p.add_run()
-                run_desc.text = desc
-                run_desc.font.name = FONT
-                run_desc.font.size = Pt(17)
-                run_desc.font.color.rgb = FG
-
-                p.space_before = Pt(6)
+                # Description text
+                dtb = self._add_textbox(slide, desc_left + Inches(2.3), row_top, Inches(6.5), row_h)
+                dtf = dtb.text_frame
+                dtf.word_wrap = True
+                # Parse inline math in description
+                self._set_text_with_inline_math(dtf.paragraphs[0], desc, Pt(17), FG)
 
         if sd.footnote:
             self._add_footnote(slide, sd.footnote)
+
+    def _set_text_with_inline_math(self, para, text, size, color):
+        """Set paragraph text, rendering $...$ as inline math images where possible."""
+        para.clear()
+        # For now, just strip $ and set as text (inline image in para not supported by python-pptx)
+        clean = re.sub(r'\$([^$]+)\$', r'\1', text)
+        run = para.add_run()
+        run.text = clean
+        run.font.name = FONT
+        run.font.size = size
+        run.font.color.rgb = color
 
     def _add_column_content(self, slide, lines, left, top, width, height, size=Pt(18)):
         """Add column content, handling embedded images."""
