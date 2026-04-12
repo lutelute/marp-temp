@@ -8,108 +8,78 @@ math: katex
 <!-- _class: title -->
 <!-- _paginate: false -->
 
-# 効率的な Transformer 拡張手法の提案
-## — Sparse Attention による計算量削減 —
+# テンプレートギャラリー
+## 研究発表スライド用 Marp テンプレート一覧
 
-山田 太郎 $^{1}$, 佐藤 花子 $^{2}$
+各スライド種別のサンプルを収録
+テンプレート名はタイトルに明記
 
-$^{1}$ XX大学 工学研究科 &emsp; $^{2}$ YY研究所
+v1.0 — 2026年 4月
 
-Conference on Machine Learning 2026 &ensp;|&ensp; 2026年 9月 15日
+---
+
+<!-- _class: agenda -->
+
+# [Agenda] 目次テンプレート
+
+<div class="agenda-list">
+
+1. 背景・課題の提示
+2. 提案手法の説明
+3. 実験設定と結果
+4. 考察・議論
+5. まとめと今後の展望
+
+</div>
 
 ---
 
 <!-- _class: divider -->
 <!-- _paginate: false -->
 
-# 1. 背景と動機
+# [Divider] セクション区切り
 
-## 大規模モデルの計算コスト問題
+## ここにセクション副題を入れる
 
 ---
 
-# 研究背景
+# [Default] 本文テンプレート
 
 ## 問題意識
 
-- Transformer モデルの大規模化が進行
-- 計算コストが二次的に増大 → 実用上の障壁
-- 既存の効率化手法は精度低下を伴うことが多い
+- 第1の背景情報をここに記述する
+- 第2の背景情報をここに記述する
+- 既存手法の課題を明確に示す
 
 ## 本研究の貢献
 
 <div class="box-accent">
 
-1. 精度を維持したまま計算量を **60% 削減** する Sparse Attention 機構
-2. 理論的な計算量解析と収束保証
-3. 3つのベンチマークで SOTA を達成
+1. 貢献 1: 精度を維持したまま計算量を **60% 削減**
+2. 貢献 2: 理論的な保証（収束性、計算量上界）
+3. 貢献 3: 3つのベンチマークで SOTA を達成
 
 </div>
 
 ---
 
-<!-- _class: timeline-h -->
+<!-- _class: rq -->
 
-# 関連研究の流れ
+# [RQ] 研究課題テンプレート
 
-<div class="tl-h-container">
-
-<div class="tl-h-item">
-  <div class="tl-h-block">
-    <span class="tl-h-year">2017</span>
-    <span class="tl-h-text">Transformer</span>
-    <div class="tl-h-detail">Self-attention<br>計算量 $O(n^2)$<br>Vaswani et al.</div>
-  </div>
+<div class="rq-main">
+ここに研究課題（Research Question）を1文で記述する。$O(n^2)$ のような数式も使える。
 </div>
 
-<div class="tl-h-item">
-  <div class="tl-h-block">
-    <span class="tl-h-year">2020</span>
-    <span class="tl-h-text">Linformer</span>
-    <div class="tl-h-detail">線形近似<br>$O(n)$ に削減<br>Wang et al.</div>
-  </div>
+<div class="rq-sub">
+仮説: ここに仮説を補足的に記述する。
 </div>
-
-<div class="tl-h-item">
-  <div class="tl-h-block">
-    <span class="tl-h-year">2021</span>
-    <span class="tl-h-text">Flash Attention</span>
-    <div class="tl-h-detail">IO最適化<br>メモリ効率化<br>Dao et al.</div>
-  </div>
-</div>
-
-<div class="tl-h-item">
-  <div class="tl-h-block">
-    <span class="tl-h-year">2023</span>
-    <span class="tl-h-text">Ring Attention</span>
-    <div class="tl-h-detail">分散処理<br>無限長コンテキスト<br>Liu et al.</div>
-  </div>
-</div>
-
-<div class="tl-h-item highlight">
-  <div class="tl-h-block">
-    <span class="tl-h-year">2026</span>
-    <span class="tl-h-text bold">本研究</span>
-    <div class="tl-h-detail">Sparse Attention<br>$O(n^{3/2})$ + 収束保証<br>精度維持で60%削減</div>
-  </div>
-</div>
-
-</div>
-
----
-
-<!-- _class: divider -->
-<!-- _paginate: false -->
-
-# 2. 提案手法
-
-## Sparse Attention with Convergence Guarantee
 
 ---
 
 <!-- _class: equation -->
 
-# コア数式
+# [Equation] 数式テンプレート
 
 <div class="eq-main">
 
@@ -120,9 +90,9 @@ $$\text{SparseAttn}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top \odot M}{\sqrt{
 <div class="eq-desc">
   <span class="sym">$Q, K, V$</span>
   <span>クエリ・キー・バリュー行列</span>
-  <span class="sym"><span class="eq-highlight">$M$</span></span>
-  <span>学習可能なスパースマスク（$M_{ij} \in \{0, 1\}$）</span>
-  <span class="sym"><span class="eq-highlight-b">$\sqrt{d_k}$</span></span>
+  <span class="sym">$M$</span>
+  <span>学習可能なスパースマスク</span>
+  <span class="sym">$\sqrt{d_k}$</span>
   <span>スケーリング係数</span>
   <span class="sym">$\odot$</span>
   <span>要素積（Hadamard product）</span>
@@ -130,75 +100,88 @@ $$\text{SparseAttn}(Q,K,V) = \text{softmax}\!\left(\frac{QK^\top \odot M}{\sqrt{
 
 ---
 
-<!-- _class: equation -->
+<!-- _class: equations -->
 
-# 計算量解析
+# [Equations] 複数数式テンプレート（最適化問題）
 
-<div class="eq-main">
+<div class="eq-system">
+  <div class="row">
+    <span class="label">minimize</span>
 
-$$T(n) = \underbrace{O(n \cdot k)}_{\text{スパース注意}} + \underbrace{O(n \log n)}_{\text{マスク更新}} \ll \underbrace{O(n^2)}_{\text{標準 Attention}}$$
+$$\mathcal{L}(M) = \tfrac{1}{N}\sum_{i=1}^{N} \ell\bigl(f_M(x_i), y_i\bigr) + \lambda \lVert M \rVert_{1}$$
 
+  </div>
+  <div class="row">
+    <span class="label">subject to</span>
+
+$$M_{ij} \in \{0, 1\}, \quad \forall (i, j)$$
+
+  </div>
+  <div class="row">
+    <span class="label"></span>
+
+$$\sum_{j} M_{ij} \le k, \quad \forall i$$
+
+  </div>
 </div>
 
 <div class="eq-desc">
-  <span class="sym">$n$</span>
-  <span>系列長</span>
+  <span class="sym">$M$</span>
+  <span>スパースマスク行列</span>
+  <span class="sym">$\lambda$</span>
+  <span>$L_1$ 正則化係数</span>
   <span class="sym">$k$</span>
-  <span>各トークンが参照する近傍数（$k \ll n$）</span>
-  <span class="sym">$T(n)$</span>
-  <span>1層あたりの計算時間</span>
+  <span>各行のアクティブ要素数上限</span>
 </div>
-
-<div class="footnote">$k = O(\sqrt{n})$ と設定することで $T(n) = O(n^{3/2})$ を達成</div>
 
 ---
 
 <!-- _class: figure -->
 
-# 提案手法のアーキテクチャ
+# [Figure] 図版テンプレート
 
 ![w:750](assets/architecture.svg)
 
-<div class="caption"><span class="fig-num">Fig. 1.</span> 提案手法の全体構成。入力を Embedding 後、N 層の Sparse Attention Block で処理し、タスクヘッドから出力を生成する。各ブロック内で Sparse Mask の動的生成・適用・更新を行う。</div>
+<div class="caption"><span class="fig-num">Fig. 1.</span> ここに図のキャプションを記述する。簡潔に、図の読み取り方を示す。</div>
 
 ---
 
 <!-- _class: sandwich -->
 
-# 提案手法の各モジュール
+# [Sandwich] 上下挟み + 3カラムテンプレート
 
 <div class="top">
 
-<p class="lead">Fig. 1 に示した Sparse Attention Block の内部は、3つのモジュールから構成される。マスク生成→注意計算→マスク更新のサイクルを繰り返すことで、精度と効率のバランスを自動調整する。</p>
+<p class="lead">上部にリード文を配置。全体の文脈を1〜2文で説明し、下のカラムの読み方を示す。</p>
 
 </div>
 
 <div class="columns c3">
 <div>
 
-### Sparse Mask 生成
+### カラム A
 
-- 入力に基づき動的に生成
-- Top-k 選択 + Gumbel Softmax
-- 勾配が伝播可能
-
-</div>
-<div>
-
-### Attention 計算
-
-- マスク適用後の疎行列演算
-- Flash Attention と併用可能
-- メモリ使用量 $O(nk)$
+- 項目 1-1
+- 項目 1-2
+- 項目 1-3
 
 </div>
 <div>
 
-### Mask 更新
+### カラム B
 
-- $L$ ステップごとに再計算
-- 収束保証定理に基づく
-- オーバーヘッド: 全体の 5%
+- 項目 2-1
+- 項目 2-2
+- 項目 2-3
+
+</div>
+<div>
+
+### カラム C
+
+- 項目 3-1
+- 項目 3-2
+- 項目 3-3
 
 </div>
 </div>
@@ -207,7 +190,7 @@ $$T(n) = \underbrace{O(n \cdot k)}_{\text{スパース注意}} + \underbrace{O(n
 
 <div class="conclusion">
 
-**設計指針**: 各モジュールは独立に差し替え可能。既存の効率化手法（Flash Attention 等）と直交する設計のため、併用により追加の高速化が得られる。
+**まとめ**: 下部に結論ボックスを配置。3カラムの要点を1文でまとめる。
 
 </div>
 
@@ -215,20 +198,155 @@ $$T(n) = \underbrace{O(n \cdot k)}_{\text{スパース注意}} + \underbrace{O(n
 
 ---
 
-<!-- _class: divider -->
-<!-- _paginate: false -->
+<!-- _class: sandwich -->
 
-# 3. 実験と結果
+# [Sandwich+Box] 中央背景ボックス付きテンプレート
 
-## 3つのベンチマークでの評価
+<div class="top">
+
+<p class="lead">中央領域に背景付きボックスを配置する例。概念図や図解の代わりに、構造化されたテキストブロックを使う。</p>
+
+</div>
+
+<div class="columns c2">
+<div>
+
+<div class="box">
+
+**入力**: 生テキスト系列 $x_1, x_2, \ldots, x_n$
+
+**処理 1**: Embedding → ベクトル列に変換
+
+**処理 2**: Sparse Mask を動的生成
+
+**処理 3**: マスク付き Attention 計算
+
+**出力**: コンテキスト付きベクトル列
+
+</div>
+
+</div>
+<div>
+
+### ポイント
+
+- 各処理は独立に差し替え可能
+- Flash Attention と併用可能
+- マスク生成のオーバーヘッドは 5% 以下
+- 入出力の次元は不変 → ドロップイン置換
+
+</div>
+</div>
+
+<div class="bottom">
+
+<div class="box-accent">
+
+**設計原則**: モジュラー構成により、既存パイプラインへの導入コストを最小化する。
+
+</div>
+
+</div>
+
+---
+
+<!-- _class: cols-2 -->
+
+# [Cols-2] 2カラムテンプレート
+
+<div class="columns">
+<div>
+
+### 左カラム
+
+ここに図、グラフ、またはテキストを配置する。
+
+<div class="box">
+
+数値結果やハイライトをボックスで囲む例:
+
+- 精度: **89.4%**
+- 速度: **2.4x**
+- メモリ: **-40%**
+
+</div>
+
+</div>
+<div>
+
+### 右カラム
+
+図の解説や追加の分析結果をここに記述する。
+
+- 左の結果は3回の試行の平均値
+- 標準偏差は ±0.3% 以内
+- ベースラインとの差は統計的に有意 ($p < 0.01$)
+- 長系列タスクほど改善幅が大きい
+
+</div>
+</div>
+
+---
+
+<!-- _class: cols-3 -->
+
+# [Cols-3] 3カラムテンプレート
+
+<div class="columns">
+<div>
+
+### ベンチマーク A
+
+<div class="box-accent">
+
+- スコア: **17.9**
+- 計算: 0.40x
+- 改善: -2.2%
+
+</div>
+
+長系列言語モデリングでの性能。
+
+</div>
+<div>
+
+### ベンチマーク B
+
+<div class="box-accent">
+
+- スコア: **89.4**
+- 計算: 0.38x
+- 改善: +1.1%
+
+</div>
+
+自然言語理解タスクでの性能。
+
+</div>
+<div>
+
+### ベンチマーク C
+
+<div class="box-accent">
+
+- スコア: **82.1**
+- 計算: 0.35x
+- 改善: +3.6%
+
+</div>
+
+長距離依存タスクでの性能。
+
+</div>
+</div>
 
 ---
 
 <!-- _class: table-slide -->
 
-# 定量的結果
+# [Table] 表テンプレート
 
-## <span class="tab-num">Table 1.</span> 言語モデリング性能の比較（WikiText-103）
+## Table 1. 手法間の定量比較
 
 | 手法 | Perplexity ↓ | 計算時間 | メモリ | パラメータ数 |
 |------|:-----------:|:------:|:----:|:---------:|
@@ -239,177 +357,229 @@ $$T(n) = \underbrace{O(n \cdot k)}_{\text{スパース注意}} + \underbrace{O(n
 
 <div class="box-accent">
 
-**最良の Perplexity** かつ **最少の計算時間** を同時に達成。パラメータ増加はわずか 2M（マスク生成器分）。
+**Ours** が全指標で最良。パラメータ増加はマスク生成器分のわずか 2M。
 
 </div>
 
-<div class="footnote">すべての実験は同一のハードウェア環境 (NVIDIA A100 80GB) で実施</div>
+<div class="footnote">同一ハードウェア (NVIDIA A100 80GB) で測定</div>
 
 ---
 
-<!-- _class: cols-2 -->
+<!-- _class: timeline-h -->
 
-# 結果の可視化
+# [Timeline-H] 横タイムラインテンプレート
 
-<div class="columns">
-<div>
+<div class="tl-h-container">
 
-![w:440](assets/learning-curve.svg)
-
-<div class="small center"><span class="fig-num">Fig. 2.</span> 学習曲線の比較。提案手法（赤）は 50 epoch で収束し、標準 Transformer（青）の 2.4 倍速い。</div>
-
+<div class="tl-h-item">
+  <div class="tl-h-block">
+    <span class="tl-h-year">2017</span>
+    <span class="tl-h-text">Transformer</span>
+    <div class="tl-h-detail">Self-attention<br>$O(n^2)$</div>
+  </div>
 </div>
-<div>
 
-![w:440](assets/sparsity-pattern.svg)
-
-<div class="small center"><span class="fig-num">Fig. 3.</span> Layer 6 で学習されたスパースパターン。対角（局所注意）が支配的で、Token 6 がハブとして全体に接続。</div>
-
+<div class="tl-h-item">
+  <div class="tl-h-block">
+    <span class="tl-h-year">2020</span>
+    <span class="tl-h-text">Linformer</span>
+    <div class="tl-h-detail">線形近似<br>$O(n)$</div>
+  </div>
 </div>
+
+<div class="tl-h-item">
+  <div class="tl-h-block">
+    <span class="tl-h-year">2022</span>
+    <span class="tl-h-text">Flash Attention</span>
+    <div class="tl-h-detail">IO最適化</div>
+  </div>
+</div>
+
+<div class="tl-h-item highlight">
+  <div class="tl-h-block">
+    <span class="tl-h-year">2026</span>
+    <span class="tl-h-text bold">本研究</span>
+    <div class="tl-h-detail">Sparse + 収束保証<br>$O(n^{3/2})$</div>
+  </div>
+</div>
+
 </div>
 
 ---
 
-<!-- _class: cols-3 -->
+<!-- _class: zone-flow -->
 
-# ベンチマーク別結果
+# [Zone-Flow] フローテンプレート
 
-<div class="columns">
-<div>
+<div class="zf-container">
 
-### WikiText-103
+<div class="zf-box">
+  <span class="zf-label">Step 1</span>
+  <span class="zf-body">データ収集と前処理。ノイズ除去、正規化、トークナイズ。</span>
+</div>
 
-<div class="box-accent">
+<div class="zf-box">
+  <span class="zf-label">Step 2</span>
+  <span class="zf-body">特徴量設計とモデル構築。ハイパーパラメータ探索。</span>
+</div>
 
-- PPL: **17.9**
-- 計算: 0.40x
-- 改善: -2.2%
-
+<div class="zf-box">
+  <span class="zf-label">Step 3</span>
+  <span class="zf-body">評価とベースライン比較。統計検定で有意差確認。</span>
 </div>
 
 </div>
-<div>
-
-### GLUE (avg)
-
-<div class="box-accent">
-
-- Score: **89.4**
-- 計算: 0.38x
-- 改善: +1.1%
-
-</div>
-
-</div>
-<div>
-
-### Long Range Arena
-
-<div class="box-accent">
-
-- Acc: **82.1**
-- 計算: 0.35x
-- 改善: +3.6%
-
-</div>
-
-</div>
-</div>
-
-<div class="footnote">Long Range Arena では長系列タスクが多いため、スパース化の恩恵が最大</div>
 
 ---
 
-<!-- _class: divider -->
-<!-- _paginate: false -->
+<!-- _class: zone-compare -->
 
-# 4. まとめ
+# [Zone-Compare] 比較テンプレート
+
+<div class="zc-container">
+
+<div class="zc-left">
+  <span class="zc-label">従来手法</span>
+  <span class="zc-body">全注意計算。計算量 $O(n^2)$。精度は高いがスケーラビリティに課題。大規模データでは実用困難。</span>
+</div>
+
+<div class="zc-vs">VS</div>
+
+<div class="zc-right">
+  <span class="zc-label">提案手法</span>
+  <span class="zc-body">動的スパース注意。$O(n\sqrt{n})$ で同等精度。GPU並列化対応。系列長 16K でも実用速度。</span>
+</div>
+
+</div>
 
 ---
 
-<!-- _class: sandwich -->
+<!-- _class: zone-matrix -->
 
-# まとめと今後の展望
+# [Zone-Matrix] 2x2 マトリクステンプレート
 
-<div class="top">
+<div class="zm-container">
 
-<p class="lead">本研究では、収束保証付き Sparse Attention 機構を提案し、精度を維持しつつ計算量 60% 削減を達成した。以下に主要な成果と今後の展望を示す。</p>
+<div class="zm-ylabel">精度</div>
+<div class="zm-xlabel">計算コスト</div>
 
+<div class="zm-cell zm-tl">
+  <span class="zm-label">理想（提案手法）</span>
+  <span class="zm-body">高精度 + 低コスト。動的スパースで両立。</span>
 </div>
 
-<div class="columns c2">
-<div>
-
-## 主要な成果
-
-1. 3ベンチマーク全てで SOTA
-2. 計算量 $O(n^{3/2})$ の理論保証
-3. 既存手法との併用が容易
-
-</div>
-<div>
-
-## 今後の課題
-
-1. マルチモーダルへの拡張
-2. さらなるスパース化の限界解析
-3. ハードウェア最適化の検討
-
-</div>
+<div class="zm-cell zm-tr">
+  <span class="zm-label">力技</span>
+  <span class="zm-body">高精度だが高コスト。Full Attention 等。</span>
 </div>
 
-<div class="bottom">
+<div class="zm-cell zm-bl">
+  <span class="zm-label">ベースライン</span>
+  <span class="zm-body">低コスト・低精度。ルールベース手法。</span>
+</div>
 
-<div class="conclusion">
-
-**結論**: Sparse Attention は大規模モデルの実用化における計算コスト問題の有力な解決策であり、精度と効率のトレードオフを根本的に改善する。本研究は JST CREST (JPMJCR20D3) の支援を受けた。
-
+<div class="zm-cell zm-br">
+  <span class="zm-label">非効率</span>
+  <span class="zm-body">高コスト + 低精度。設計上の問題。</span>
 </div>
 
 </div>
+
+---
+
+<!-- _class: zone-process -->
+
+# [Zone-Process] 手順テンプレート
+
+<div class="zp-container">
+
+<div class="zp-step">
+  <span class="zp-num">1</span>
+  <span class="zp-title">データ準備</span>
+  <span class="zp-body">公開データセットから 10 万件を取得。ノイズ除去と BPE トークナイズ。</span>
+</div>
+
+<div class="zp-step">
+  <span class="zp-num">2</span>
+  <span class="zp-title">モデル構築</span>
+  <span class="zp-body">12 層 Sparse Attention Block。隠れ次元 768、ヘッド数 12。</span>
+</div>
+
+<div class="zp-step">
+  <span class="zp-num">3</span>
+  <span class="zp-title">学習</span>
+  <span class="zp-body">AdamW, lr=3e-4, cosine schedule。100 epoch, batch 64。</span>
+</div>
+
+<div class="zp-step">
+  <span class="zp-num">4</span>
+  <span class="zp-title">評価</span>
+  <span class="zp-body">Perplexity, FLOPs, wall-clock time で 3 ベースラインと比較。</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: summary -->
+
+# [Summary] まとめテンプレート（Q&A 表示用）
+
+<ol class="summary-points">
+<li>貢献 1: ここに第一の成果を記述する</li>
+<li>貢献 2: ここに第二の成果を記述する</li>
+<li>貢献 3: ここに第三の成果を記述する</li>
+<li>展望: ここに今後の方向性を記述する</li>
+</ol>
 
 ---
 
 <!-- _class: references -->
 <!-- _paginate: false -->
 
-# References
+# [References] 参考文献テンプレート
 
 <ol>
 <li>
-  <span class="author">Vaswani, A. et al.</span>
-  <span class="title">"Attention Is All You Need."</span>
-  <span class="venue">NeurIPS, 2017.</span>
+  <span class="author">著者 A et al.</span>
+  <span class="title">"論文タイトル 1."</span>
+  <span class="venue">会議名, 年.</span>
 </li>
 <li>
-  <span class="author">Wang, S. et al.</span>
-  <span class="title">"Linformer: Self-Attention with Linear Complexity."</span>
-  <span class="venue">arXiv:2006.04768, 2020.</span>
+  <span class="author">著者 B et al.</span>
+  <span class="title">"論文タイトル 2."</span>
+  <span class="venue">ジャーナル名, 年.</span>
 </li>
 <li>
-  <span class="author">Dao, T. et al.</span>
-  <span class="title">"FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness."</span>
-  <span class="venue">NeurIPS, 2022.</span>
-</li>
-<li>
-  <span class="author">Liu, H. et al.</span>
-  <span class="title">"Ring Attention with Blockwise Transformers for Near-Infinite Context."</span>
-  <span class="venue">ICLR, 2024.</span>
-</li>
-<li>
-  <span class="author">Devlin, J. et al.</span>
-  <span class="title">"BERT: Pre-training of Deep Bidirectional Transformers."</span>
-  <span class="venue">NAACL-HLT, 2019.</span>
+  <span class="author">著者 C et al.</span>
+  <span class="title">"論文タイトル 3."</span>
+  <span class="venue">arXiv:XXXX.XXXXX, 年.</span>
 </li>
 </ol>
+
+---
+
+<!-- _class: appendix -->
+
+# [Appendix] 付録テンプレート
+
+<span class="appendix-label">Appendix A</span>
+
+| パラメータ | 値 | 備考 |
+|---|---|---|
+| 隠れ次元 | 768 | BERT-base と同一 |
+| ヘッド数 | 12 | Multi-head Attention |
+| 層数 | 12 | |
+| 学習率 | 3e-4 | cosine schedule |
+| バッチサイズ | 64 | V100 x 4 |
 
 ---
 
 <!-- _class: end -->
 <!-- _paginate: false -->
 
-# Thank you
+# [End] 終了テンプレート
 
 Questions?
 
-taro.yamada@xx-university.ac.jp
+name@university.ac.jp
