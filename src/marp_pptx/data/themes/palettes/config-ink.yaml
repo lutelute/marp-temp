@@ -1,0 +1,26 @@
+name: ink
+title: Ink — ボールドエディトリアル
+description: 濃紺。太い左バー。大見出し。インパクト重視。
+colors:
+  primary: '#0f0a1a'
+  secondary: '#2d3a8c'
+  accent: '#e8505b'
+  fg: '#141028'
+  muted: '#7a7aa0'
+  light: '#f2f0fa'
+  border: '#d8d0e8'
+fonts:
+  head: '''Futura'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: left-bar
+  h1_deco_width: 10
+  h1_deco_color: accent
+  title_bg: dark
+  title_align: left
+  divider_align: left
+  end_bg: dark
+  box_style: accent-border
+  box_radius: 0.02
+  box_fill: false
+  spacing: compact

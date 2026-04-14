@@ -216,6 +216,37 @@ class SlideData:
     result_caption: str = ""
     result_analysis: list = field(default_factory=list)  # [str, ...]
     steps_items: list = field(default_factory=list)  # [{"num","title","body"}, ...]
+    # New slide types (v2)
+    quote_text: str = ""
+    quote_source: str = ""
+    history_items: list = field(default_factory=list)   # [{"year","event"}, ...]
+    panorama_text: str = ""
+    kpi_items: list = field(default_factory=list)        # [{"value","label"}, ...]
+    pros_items: list = field(default_factory=list)       # [str, ...]
+    cons_items: list = field(default_factory=list)       # [str, ...]
+    def_term: str = ""
+    def_body: str = ""
+    def_note: str = ""
+    gallery_items: list = field(default_factory=list)    # [{"image","caption"}, ...]
+    highlight_text: str = ""
+    checklist_items: list = field(default_factory=list)  # [{"text","done"}, ...]
+    annotation_figure: str = ""
+    annotation_notes: list = field(default_factory=list) # [str, ...]
+    ba_before: dict = field(default_factory=dict)        # {"label","body"}
+    ba_after: dict = field(default_factory=dict)         # {"label","body"}
+    funnel_items: list = field(default_factory=list)     # [{"label","value"}, ...]
+    stack_items: list = field(default_factory=list)      # [{"name","desc"}, ...]
+    card_items: list = field(default_factory=list)       # [{"title","body"}, ...]
+    split_left: dict = field(default_factory=dict)       # {"label","body"}
+    split_right: dict = field(default_factory=dict)      # {"label","body"}
+    code_text: str = ""
+    code_desc: str = ""
+    multi_result_items: list = field(default_factory=list) # [{"metric","value","desc"}, ...]
+    takeaway_main: str = ""
+    takeaway_points: list = field(default_factory=list)  # [str, ...]
+    profile_name: str = ""
+    profile_affiliation: str = ""
+    profile_bio: list = field(default_factory=list)      # [str, ...]
 
 
 # ============================================================
@@ -705,6 +736,236 @@ def parse_slide(index: int, raw: str) -> SlideData:
         if fn:
             sd.footnote = strip_html(fn)
 
+    # --- Quote ---
+    elif cls == "quote":
+        qt = extract_div(content, "qt-text")
+        if qt:
+            sd.quote_text = strip_html(qt)
+        qs = extract_div(content, "qt-source")
+        if qs:
+            sd.quote_source = strip_html(qs)
+
+    # --- History ---
+    elif cls == "history":
+        container = extract_div(content, "hs-container")
+        if container:
+            for item in extract_child_divs(container):
+                ym = re.search(r'class="[^"]*hs-year[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                em = re.search(r'class="[^"]*hs-event[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                sd.history_items.append({
+                    "year": strip_html(ym.group(1)) if ym else "",
+                    "event": strip_html(em.group(1)) if em else "",
+                })
+
+    # --- Panorama ---
+    elif cls == "panorama":
+        pn = extract_div(content, "pn-text")
+        if pn:
+            sd.panorama_text = strip_html(pn)
+        img = re.search(r"!\[(?:w:\d+)?\]\(([^)]+)\)", content)
+        if img:
+            sd.image_path = img.group(1)
+
+    # --- KPI ---
+    elif cls == "kpi":
+        container = extract_div(content, "kpi-container")
+        if container:
+            for item in extract_child_divs(container):
+                vm = re.search(r'class="[^"]*kpi-value[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                lm = re.search(r'class="[^"]*kpi-label[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                sd.kpi_items.append({
+                    "value": strip_html(vm.group(1)) if vm else "",
+                    "label": strip_html(lm.group(1)) if lm else "",
+                })
+
+    # --- Pros-Cons ---
+    elif cls == "pros-cons":
+        pros = extract_div(content, "pc-pros")
+        if pros:
+            for li in re.finditer(r"<li>(.*?)</li>", pros, re.DOTALL):
+                sd.pros_items.append(strip_html(li.group(1)))
+        cons = extract_div(content, "pc-cons")
+        if cons:
+            for li in re.finditer(r"<li>(.*?)</li>", cons, re.DOTALL):
+                sd.cons_items.append(strip_html(li.group(1)))
+
+    # --- Definition ---
+    elif cls == "definition":
+        dt = extract_div(content, "df-term")
+        if dt:
+            sd.def_term = strip_html(dt)
+        db = extract_div(content, "df-body")
+        if db:
+            sd.def_body = strip_html(db)
+        dn = extract_div(content, "df-note")
+        if dn:
+            sd.def_note = strip_html(dn)
+
+    # --- Diagram ---
+    elif cls == "diagram":
+        img = re.search(r"!\[(?:w:\d+)?\]\(([^)]+)\)", content)
+        if img:
+            sd.image_path = img.group(1)
+        cap = extract_div(content, "caption")
+        if cap:
+            sd.caption = strip_html(cap)
+
+    # --- Gallery-Img ---
+    elif cls == "gallery-img":
+        container = extract_div(content, "gi-container")
+        if container:
+            for item in extract_child_divs(container):
+                img_m = re.search(r"!\[(?:w:\d+)?\]\(([^)]+)\)", item)
+                cap = extract_div(item, "gi-caption")
+                sd.gallery_items.append({
+                    "image": img_m.group(1) if img_m else "",
+                    "caption": strip_html(cap) if cap else "",
+                })
+
+    # --- Highlight ---
+    elif cls == "highlight":
+        hl = extract_div(content, "hl-text")
+        if hl:
+            sd.highlight_text = strip_html(hl)
+
+    # --- Checklist ---
+    elif cls == "checklist":
+        container = extract_div(content, "cl-container")
+        if container:
+            for li in re.finditer(r'<li(\s+class="done")?>(.*?)</li>', container, re.DOTALL):
+                sd.checklist_items.append({
+                    "text": strip_html(li.group(2)),
+                    "done": li.group(1) is not None,
+                })
+
+    # --- Annotation ---
+    elif cls == "annotation":
+        fig = extract_div(content, "an-figure")
+        if fig:
+            img_m = re.search(r"!\[(?:w:\d+)?\]\(([^)]+)\)", fig)
+            if img_m:
+                sd.annotation_figure = img_m.group(1)
+        notes = extract_div(content, "an-notes")
+        if notes:
+            for li in re.finditer(r"<li>(.*?)</li>", notes, re.DOTALL):
+                sd.annotation_notes.append(strip_html(li.group(1)))
+
+    # --- Before-After ---
+    elif cls == "before-after":
+        for prefix, div_cls in [("ba_before", "ba-before"), ("ba_after", "ba-after")]:
+            div = extract_div(content, div_cls)
+            if div:
+                lm = re.search(r'class="[^"]*ba-label[^"]*"[^>]*>(.*?)</span>', div, re.DOTALL)
+                bm = re.search(r'class="[^"]*ba-body[^"]*"[^>]*>(.*?)</span>', div, re.DOTALL)
+                setattr(sd, prefix, {
+                    "label": strip_html(lm.group(1)) if lm else "",
+                    "body": strip_html(bm.group(1)) if bm else "",
+                })
+
+    # --- Funnel ---
+    elif cls == "funnel":
+        container = extract_div(content, "fn-container")
+        if container:
+            for item in extract_child_divs(container):
+                lm = re.search(r'class="[^"]*fn-label[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                vm = re.search(r'class="[^"]*fn-value[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                sd.funnel_items.append({
+                    "label": strip_html(lm.group(1)) if lm else "",
+                    "value": strip_html(vm.group(1)) if vm else "",
+                })
+
+    # --- Stack ---
+    elif cls == "stack":
+        container = extract_div(content, "sk-container")
+        if container:
+            for item in extract_child_divs(container):
+                nm = re.search(r'class="[^"]*sk-name[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                dm = re.search(r'class="[^"]*sk-desc[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                sd.stack_items.append({
+                    "name": strip_html(nm.group(1)) if nm else "",
+                    "desc": strip_html(dm.group(1)) if dm else "",
+                })
+
+    # --- Card-Grid ---
+    elif cls == "card-grid":
+        container = extract_div(content, "cg-container")
+        if container:
+            for item in extract_child_divs(container):
+                tm = re.search(r'class="[^"]*cg-title[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                bm = re.search(r'class="[^"]*cg-body[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                sd.card_items.append({
+                    "title": strip_html(tm.group(1)) if tm else "",
+                    "body": strip_html(bm.group(1)) if bm else "",
+                })
+
+    # --- Split-Text ---
+    elif cls == "split-text":
+        for prefix, div_cls in [("split_left", "sp-left"), ("split_right", "sp-right")]:
+            div = extract_div(content, div_cls)
+            if div:
+                lm = re.search(r'class="[^"]*sp-label[^"]*"[^>]*>(.*?)</span>', div, re.DOTALL)
+                bm = re.search(r'class="[^"]*sp-body[^"]*"[^>]*>(.*?)</span>', div, re.DOTALL)
+                setattr(sd, prefix, {
+                    "label": strip_html(lm.group(1)) if lm else "",
+                    "body": strip_html(bm.group(1)) if bm else "",
+                })
+
+    # --- Code ---
+    elif cls == "code":
+        cd = extract_div(content, "cd-code")
+        if cd:
+            # Extract text from code block, preserving content
+            code_m = re.search(r"```[\w]*\n(.*?)```", cd, re.DOTALL)
+            if code_m:
+                sd.code_text = code_m.group(1).rstrip()
+            else:
+                sd.code_text = strip_html(cd)
+        desc = extract_div(content, "cd-desc")
+        if desc:
+            sd.code_desc = strip_html(desc)
+
+    # --- Multi-Result ---
+    elif cls == "multi-result":
+        container = extract_div(content, "mr-container")
+        if container:
+            for item in extract_child_divs(container):
+                mm = re.search(r'class="[^"]*mr-metric[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                vm = re.search(r'class="[^"]*mr-value[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                dm = re.search(r'class="[^"]*mr-desc[^"]*"[^>]*>(.*?)</span>', item, re.DOTALL)
+                sd.multi_result_items.append({
+                    "metric": strip_html(mm.group(1)) if mm else "",
+                    "value": strip_html(vm.group(1)) if vm else "",
+                    "desc": strip_html(dm.group(1)) if dm else "",
+                })
+
+    # --- Takeaway ---
+    elif cls == "takeaway":
+        ta = extract_div(content, "ta-main")
+        if ta:
+            sd.takeaway_main = strip_html(ta)
+        pts = extract_div(content, "ta-points")
+        if pts:
+            for li in re.finditer(r"<li>(.*?)</li>", pts, re.DOTALL):
+                sd.takeaway_points.append(strip_html(li.group(1)))
+
+    # --- Profile ---
+    elif cls == "profile":
+        container = extract_div(content, "pf-container")
+        if container:
+            nm = extract_div(container, "pf-name")
+            if nm:
+                sd.profile_name = strip_html(nm)
+            af = extract_div(container, "pf-affiliation")
+            if af:
+                sd.profile_affiliation = strip_html(af)
+            bio = extract_div(container, "pf-bio")
+            if bio:
+                for li in re.finditer(r"<li>(.*?)</li>", bio, re.DOTALL):
+                    sd.profile_bio.append(strip_html(li.group(1)))
+        img = re.search(r"!\[(?:w:\d+)?\]\(([^)]+)\)", content)
+        if img:
+            sd.image_path = img.group(1)
+
     # --- Default body ---
     else:
         # Remove h1/h2 lines from body
@@ -1018,7 +1279,7 @@ class PptxBuilder:
         p.font.size = size
         p.font.color.rgb = color
         p.font.bold = bold
-        p.font.italic = italic
+        # p.font.italic = italic  # disabled by design
         p.space_before = space_before
         return p
 
@@ -1487,7 +1748,7 @@ class PptxBuilder:
                 lp.text = label
                 lp.font.name = FONT
                 lp.font.size = Pt(max(14, pt_size - 10))
-                lp.font.italic = True
+                lp.font.italic = False
                 lp.font.color.rgb = SECONDARY
                 lp.alignment = PP_ALIGN.RIGHT
 
@@ -1830,7 +2091,7 @@ class PptxBuilder:
             run_title.text = title + " "
             run_title.font.name = FONT
             run_title.font.size = Pt(14)
-            run_title.font.italic = True
+            run_title.font.italic = False
             run_title.font.color.rgb = FG
 
             run_venue = p.add_run()
@@ -2686,6 +2947,825 @@ class PptxBuilder:
         if sd.footnote:
             self._add_footnote(slide, sd.footnote)
 
+    # ---------- New slide type builders (v2) ----------
+
+    def build_quote(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        # Large opening quote mark
+        qtb = self._add_textbox(slide, MARGIN_L + Inches(0.5), BODY_TOP, Inches(1.5), Inches(1.2))
+        qp = qtb.text_frame.paragraphs[0]
+        qp.text = "\u275D"
+        qp.font.name = FONT_HEAD
+        qp.font.size = Pt(72)
+        qp.font.color.rgb = LIGHT
+
+        # Quote text with left border
+        q_left = MARGIN_L + Inches(1.0)
+        q_top = BODY_TOP + Inches(0.8)
+        q_w = CONTENT_W - Inches(2.0)
+        q_h = Inches(3.0)
+        # Left border bar
+        bdr = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+            int(q_left), int(q_top), Pt(4), int(q_h))
+        bdr.fill.solid()
+        bdr.fill.fore_color.rgb = SECONDARY
+        bdr.line.fill.background()
+        # Text
+        tb = self._add_textbox(slide, int(q_left + Pt(20)), int(q_top + Pt(8)),
+            int(q_w), int(q_h))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = tf.paragraphs[0]
+        p.text = sd.quote_text
+        p.font.name = FONT
+        p.font.size = Pt(22)
+        p.font.color.rgb = FG
+        p.font.italic = False
+
+        # Source attribution (right-aligned)
+        if sd.quote_source:
+            stb = self._add_textbox(slide, int(q_left), int(q_top + q_h + Inches(0.3)),
+                int(q_w + Pt(20)), Inches(0.5))
+            sp = stb.text_frame.paragraphs[0]
+            sp.text = "-- " + sd.quote_source
+            sp.font.name = FONT
+            sp.font.size = Pt(16)
+            sp.font.color.rgb = MUTED
+            sp.alignment = PP_ALIGN.RIGHT
+
+    def build_history(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.history_items
+        if not items:
+            return
+
+        n = len(items)
+        row_h = min(Inches(0.8), int((BODY_H - Inches(0.2)) / n))
+        year_w = Inches(1.5)
+        event_left = MARGIN_L + year_w + Inches(0.3)
+        event_w = CONTENT_W - year_w - Inches(0.3)
+
+        for i, item in enumerate(items):
+            y = BODY_TOP + int(row_h * i)
+
+            # Year
+            ytb = self._add_textbox(slide, int(MARGIN_L), int(y), int(year_w), int(row_h))
+            ytf = ytb.text_frame
+            ytf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            yp = ytf.paragraphs[0]
+            yp.text = item["year"]
+            yp.font.name = FONT_HEAD
+            yp.font.size = Pt(20)
+            yp.font.bold = True
+            yp.font.color.rgb = PRIMARY
+            yp.alignment = PP_ALIGN.RIGHT
+
+            # Event
+            etb = self._add_textbox(slide, int(event_left), int(y), int(event_w), int(row_h))
+            etf = etb.text_frame
+            etf.word_wrap = True
+            etf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            ep = etf.paragraphs[0]
+            ep.text = item["event"]
+            ep.font.name = FONT
+            ep.font.size = Pt(16)
+            ep.font.color.rgb = FG
+
+            # Horizontal line between items
+            if i < n - 1:
+                ln = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE,
+                    int(MARGIN_L), int(y + row_h - Pt(1)),
+                    int(CONTENT_W), Pt(1))
+                ln.fill.solid()
+                ln.fill.fore_color.rgb = RGBColor(0xDE, 0xE2, 0xE6)
+                ln.line.fill.background()
+
+    def build_panorama(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        text_w = int(CONTENT_W * 0.4)
+        img_w = int(CONTENT_W * 0.55)
+        gap = int(CONTENT_W * 0.05)
+
+        # Left text
+        if sd.panorama_text:
+            tb = self._add_textbox(slide, MARGIN_L, BODY_TOP, text_w, BODY_H)
+            tf = tb.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            p = tf.paragraphs[0]
+            p.text = sd.panorama_text
+            p.font.name = FONT
+            p.font.size = Pt(18)
+            p.font.color.rgb = FG
+
+        # Right image
+        if sd.image_path:
+            img_file = self._resolve_image(sd.image_path)
+            if img_file:
+                from PIL import Image
+                with Image.open(img_file) as im:
+                    iw, ih = im.size
+                max_w = img_w
+                max_h = int(BODY_H)
+                scale = min(max_w / (iw * 914400 / 96), max_h / (ih * 914400 / 96), 1.0)
+                pw = int(iw * scale * 914400 / 96)
+                ph = int(ih * scale * 914400 / 96)
+                ix = int(MARGIN_L + text_w + gap + (img_w - pw) / 2)
+                iy = int(BODY_TOP + (BODY_H - ph) / 2)
+                slide.shapes.add_picture(img_file, ix, iy, pw, ph)
+
+    def build_kpi(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.kpi_items
+        if not items:
+            return
+
+        n = len(items)
+        gap = Inches(0.3)
+        col_w = (CONTENT_W - gap * (n - 1)) / n
+        y = BODY_TOP + Inches(0.5)
+
+        for i, item in enumerate(items):
+            x = MARGIN_L + i * (col_w + gap)
+
+            # Large value
+            vtb = self._add_textbox(slide, int(x), int(y), int(col_w), Inches(2.0))
+            vtf = vtb.text_frame
+            vtf.vertical_anchor = MSO_ANCHOR.BOTTOM
+            vp = vtf.paragraphs[0]
+            vp.text = item["value"]
+            vp.font.name = FONT_HEAD
+            vp.font.size = Pt(48)
+            vp.font.bold = True
+            vp.font.color.rgb = PRIMARY
+            vp.alignment = PP_ALIGN.CENTER
+
+            # Label below
+            ltb = self._add_textbox(slide, int(x), int(y + Inches(2.2)), int(col_w), Inches(0.8))
+            ltf = ltb.text_frame
+            ltf.word_wrap = True
+            lp = ltf.paragraphs[0]
+            lp.text = item["label"]
+            lp.font.name = FONT
+            lp.font.size = Pt(16)
+            lp.font.color.rgb = MUTED
+            lp.alignment = PP_ALIGN.CENTER
+
+    def build_pros_cons(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        gap = Inches(0.6)
+        col_w = (CONTENT_W - gap) / 2
+        y = BODY_TOP + Inches(0.1)
+
+        # Pros column (left)
+        self._build_pros_cons_col(slide, sd.pros_items, MARGIN_L, y, col_w,
+            "Pros", SECONDARY, "\u2713")
+
+        # Cons column (right)
+        self._build_pros_cons_col(slide, sd.cons_items, int(MARGIN_L + col_w + gap), y, col_w,
+            "Cons", ACCENT, "\u2717")
+
+    def _build_pros_cons_col(self, slide, items, x, y, w, header, color, bullet_char):
+        # Header
+        htb = self._add_textbox(slide, int(x), int(y), int(w), Inches(0.5))
+        hp = htb.text_frame.paragraphs[0]
+        hp.text = header
+        hp.font.name = FONT_HEAD
+        hp.font.size = Pt(20)
+        hp.font.bold = True
+        hp.font.color.rgb = color
+        hp.alignment = PP_ALIGN.CENTER
+
+        # Items
+        itb = self._add_textbox(slide, int(x), int(y + Inches(0.6)), int(w), int(BODY_H - Inches(0.8)))
+        itf = itb.text_frame
+        itf.word_wrap = True
+        first = True
+        for item in items:
+            if first:
+                p = itf.paragraphs[0]
+                first = False
+            else:
+                p = itf.add_paragraph()
+            run = p.add_run()
+            run.text = bullet_char + "  " + item
+            run.font.name = FONT
+            run.font.size = Pt(16)
+            run.font.color.rgb = FG
+            p.space_before = Pt(8)
+
+    def build_definition(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        cur_y = BODY_TOP + Inches(0.3)
+
+        # Term
+        if sd.def_term:
+            tb = self._add_textbox(slide, MARGIN_L, int(cur_y), CONTENT_W, Inches(0.8))
+            p = tb.text_frame.paragraphs[0]
+            p.text = sd.def_term
+            p.font.name = FONT_HEAD
+            p.font.size = Pt(32)
+            p.font.bold = True
+            p.font.color.rgb = PRIMARY
+            cur_y += Inches(1.0)
+
+        # Definition body
+        if sd.def_body:
+            tb = self._add_textbox(slide, MARGIN_L + Inches(0.3), int(cur_y),
+                CONTENT_W - Inches(0.3), Inches(2.5))
+            tf = tb.text_frame
+            tf.word_wrap = True
+            self._set_text_with_inline_math(tf.paragraphs[0], sd.def_body, Pt(20), FG)
+            cur_y += Inches(2.8)
+
+        # Note
+        if sd.def_note:
+            tb = self._add_textbox(slide, MARGIN_L + Inches(0.3), int(cur_y),
+                CONTENT_W - Inches(0.3), Inches(1.0))
+            tf = tb.text_frame
+            tf.word_wrap = True
+            p = tf.paragraphs[0]
+            p.text = sd.def_note
+            p.font.name = FONT
+            p.font.size = Pt(14)
+            p.font.color.rgb = MUTED
+            p.font.italic = False
+
+    def build_diagram(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        img_file = self._resolve_image(sd.image_path) if sd.image_path else None
+        if img_file:
+            from PIL import Image
+            with Image.open(img_file) as im:
+                iw, ih = im.size
+            max_w = int(CONTENT_W * 0.95)
+            max_h = int(BODY_H * 0.85)
+            scale = min(max_w / (iw * 914400 / 96), max_h / (ih * 914400 / 96), 1.0)
+            pw = int(iw * scale * 914400 / 96)
+            ph = int(ih * scale * 914400 / 96)
+            left = (SW - pw) // 2
+            top = int(BODY_TOP + (BODY_H * 0.85 - ph) / 2)
+            slide.shapes.add_picture(img_file, left, top, pw, ph)
+            cap_top = top + ph + Inches(0.1)
+        else:
+            cap_top = BODY_TOP + int(BODY_H * 0.85)
+
+        if sd.caption:
+            tb = self._add_textbox(slide, MARGIN_L, int(cap_top), CONTENT_W, Inches(0.5))
+            p = tb.text_frame.paragraphs[0]
+            p.text = sd.caption
+            p.font.name = FONT
+            p.font.size = SZ_SMALL
+            p.font.color.rgb = MUTED
+            p.alignment = PP_ALIGN.CENTER
+
+    def build_gallery_img(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.gallery_items
+        if not items:
+            return
+
+        gap = Inches(0.2)
+        cols = 2
+        rows = 2
+        cell_w = (CONTENT_W - gap) / cols
+        cell_h = (BODY_H - gap - Inches(0.2)) / rows
+
+        for i, item in enumerate(items[:4]):
+            r = i // cols
+            c = i % cols
+            x = MARGIN_L + c * (cell_w + gap)
+            y = BODY_TOP + r * (cell_h + gap)
+
+            img_file = self._resolve_image(item["image"]) if item.get("image") else None
+            if img_file:
+                from PIL import Image
+                with Image.open(img_file) as im:
+                    iw, ih = im.size
+                max_w = int(cell_w - Inches(0.1))
+                max_h = int(cell_h - Inches(0.5))
+                scale = min(max_w / (iw * 914400 / 96), max_h / (ih * 914400 / 96), 1.0)
+                pw = int(iw * scale * 914400 / 96)
+                ph = int(ih * scale * 914400 / 96)
+                ix = int(x + (cell_w - pw) / 2)
+                slide.shapes.add_picture(img_file, ix, int(y), pw, ph)
+                cap_y = int(y + ph + Pt(4))
+            else:
+                cap_y = int(y + cell_h - Inches(0.4))
+
+            if item.get("caption"):
+                ctb = self._add_textbox(slide, int(x), cap_y, int(cell_w), Inches(0.35))
+                cp = ctb.text_frame.paragraphs[0]
+                cp.text = item["caption"]
+                cp.font.name = FONT
+                cp.font.size = Pt(11)
+                cp.font.color.rgb = MUTED
+                cp.alignment = PP_ALIGN.CENTER
+
+    def build_highlight(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        tb = self._add_textbox(slide, Inches(1.5), BODY_TOP + Inches(0.5),
+            SW - Inches(3), BODY_H - Inches(0.5))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        self._set_text_with_inline_math(p, sd.highlight_text, Pt(36), PRIMARY)
+        p.font.bold = True
+
+    def build_checklist(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.checklist_items
+        if not items:
+            return
+
+        tb = self._add_textbox(slide, MARGIN_L + Inches(0.3), BODY_TOP, CONTENT_W - Inches(0.3), BODY_H)
+        tf = tb.text_frame
+        tf.word_wrap = True
+        first = True
+        for item in items:
+            if first:
+                p = tf.paragraphs[0]
+                first = False
+            else:
+                p = tf.add_paragraph()
+            check = "\u2611" if item["done"] else "\u2610"
+            color = MUTED if item["done"] else FG
+            run = p.add_run()
+            run.text = check + "  " + item["text"]
+            run.font.name = FONT
+            run.font.size = Pt(18)
+            run.font.color.rgb = color
+            if item["done"]:
+                run.font.italic = False
+            p.space_before = Pt(10)
+
+    def build_annotation(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        left_w = int(CONTENT_W * 0.5)
+        gap = Inches(0.4)
+        right_x = int(MARGIN_L + left_w + gap)
+        right_w = int(CONTENT_W - left_w - gap)
+
+        # Left figure
+        if sd.annotation_figure:
+            img_file = self._resolve_image(sd.annotation_figure)
+            if img_file:
+                from PIL import Image
+                with Image.open(img_file) as im:
+                    iw, ih = im.size
+                max_w = left_w
+                max_h = int(BODY_H)
+                scale = min(max_w / (iw * 914400 / 96), max_h / (ih * 914400 / 96), 1.0)
+                pw = int(iw * scale * 914400 / 96)
+                ph = int(ih * scale * 914400 / 96)
+                ix = int(MARGIN_L + (left_w - pw) / 2)
+                iy = int(BODY_TOP + (BODY_H - ph) / 2)
+                slide.shapes.add_picture(img_file, ix, iy, pw, ph)
+
+        # Right numbered notes
+        if sd.annotation_notes:
+            tb = self._add_textbox(slide, right_x, BODY_TOP, right_w, BODY_H)
+            tf = tb.text_frame
+            tf.word_wrap = True
+            first = True
+            for i, note in enumerate(sd.annotation_notes, 1):
+                if first:
+                    p = tf.paragraphs[0]
+                    first = False
+                else:
+                    p = tf.add_paragraph()
+                run = p.add_run()
+                run.text = f"{i}. {note}"
+                run.font.name = FONT
+                run.font.size = Pt(15)
+                run.font.color.rgb = FG
+                p.space_before = Pt(10)
+
+    def build_before_after(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        gap = Inches(0.8)
+        col_w = (CONTENT_W - gap) / 2
+        y = BODY_TOP + Inches(0.1)
+        box_h = BODY_H - Inches(0.3)
+
+        # Before (left)
+        ba = sd.ba_before
+        self._add_zone_box(slide, int(MARGIN_L), int(y), int(col_w), int(box_h),
+            label=ba.get("label", "Before"), body=ba.get("body", ""),
+            label_size=Pt(22), body_size=Pt(17))
+
+        # Arrow between
+        arrow_w = Inches(0.5)
+        ax = int(MARGIN_L + col_w + gap / 2 - arrow_w / 2)
+        ay = int(y + box_h / 2 - Inches(0.15))
+        arrow = slide.shapes.add_shape(MSO_SHAPE.NOTCHED_RIGHT_ARROW,
+            ax, ay, int(arrow_w), Inches(0.3))
+        arrow.fill.solid()
+        arrow.fill.fore_color.rgb = ACCENT
+        arrow.line.fill.background()
+
+        # After (right)
+        ba2 = sd.ba_after
+        self._add_zone_box(slide, int(MARGIN_L + col_w + gap), int(y), int(col_w), int(box_h),
+            label=ba2.get("label", "After"), body=ba2.get("body", ""),
+            label_size=Pt(22), body_size=Pt(17))
+
+    def build_funnel(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.funnel_items
+        if not items:
+            return
+
+        n = len(items)
+        gap = Inches(0.08)
+        total_h = BODY_H - Inches(0.2)
+        row_h = (total_h - gap * (n - 1)) / n
+        max_w = CONTENT_W
+        min_w = CONTENT_W * 0.3
+
+        for i, item in enumerate(items):
+            # Width narrows progressively
+            frac = i / max(n - 1, 1)
+            w = int(max_w - (max_w - min_w) * frac)
+            x = int(MARGIN_L + (CONTENT_W - w) / 2)
+            y = int(BODY_TOP + i * (row_h + gap))
+
+            # Rectangle
+            rect = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                x, y, w, int(row_h))
+            rect.adjustments[0] = 0.04
+            # Color gradient from SECONDARY to ACCENT
+            rect.fill.solid()
+            r1, g1, b1 = SECONDARY
+            r2, g2, b2 = ACCENT
+            r = int(r1 + (r2 - r1) * frac)
+            g = int(g1 + (g2 - g1) * frac)
+            b = int(b1 + (b2 - b1) * frac)
+            rect.fill.fore_color.rgb = RGBColor(r, g, b)
+            rect.line.fill.background()
+
+            # Text overlay
+            tb = self._add_textbox(slide, x + Pt(16), y, w - Pt(32), int(row_h))
+            tf = tb.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            p = tf.paragraphs[0]
+            run_l = p.add_run()
+            run_l.text = item["label"]
+            run_l.font.name = FONT_HEAD
+            run_l.font.size = Pt(16)
+            run_l.font.bold = True
+            run_l.font.color.rgb = WHITE
+            if item.get("value"):
+                run_v = p.add_run()
+                run_v.text = "  " + item["value"]
+                run_v.font.name = FONT
+                run_v.font.size = Pt(14)
+                run_v.font.color.rgb = WHITE
+            p.alignment = PP_ALIGN.CENTER
+
+    def build_stack(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.stack_items
+        if not items:
+            return
+
+        n = len(items)
+        gap = Inches(0.08)
+        total_h = BODY_H - Inches(0.2)
+        row_h = (total_h - gap * (n - 1)) / n
+        colors = [PRIMARY, SECONDARY, ACCENT, MUTED]
+
+        for i, item in enumerate(items):
+            y = int(BODY_TOP + i * (row_h + gap))
+            c = colors[i % len(colors)]
+
+            # Full-width bar
+            rect = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                int(MARGIN_L), y, int(CONTENT_W), int(row_h))
+            rect.adjustments[0] = 0.02
+            rect.fill.solid()
+            rect.fill.fore_color.rgb = c
+            rect.line.fill.background()
+
+            # Name (left)
+            ntb = self._add_textbox(slide, int(MARGIN_L + Pt(20)), y,
+                int(CONTENT_W * 0.3), int(row_h))
+            ntf = ntb.text_frame
+            ntf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            np = ntf.paragraphs[0]
+            np.text = item["name"]
+            np.font.name = FONT_HEAD
+            np.font.size = Pt(18)
+            np.font.bold = True
+            np.font.color.rgb = WHITE
+
+            # Description (right)
+            dtb = self._add_textbox(slide, int(MARGIN_L + CONTENT_W * 0.35), y,
+                int(CONTENT_W * 0.6), int(row_h))
+            dtf = dtb.text_frame
+            dtf.word_wrap = True
+            dtf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            dp = dtf.paragraphs[0]
+            dp.text = item["desc"]
+            dp.font.name = FONT
+            dp.font.size = Pt(14)
+            dp.font.color.rgb = WHITE
+
+    def build_card_grid(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.card_items
+        if not items:
+            return
+
+        gap = Inches(0.2)
+        cols = 2
+        rows_count = 2
+        cell_w = (CONTENT_W - gap) / cols
+        cell_h = (BODY_H - gap - Inches(0.1)) / rows_count
+
+        for i, item in enumerate(items[:4]):
+            r = i // cols
+            c = i % cols
+            x = MARGIN_L + c * (cell_w + gap)
+            y = BODY_TOP + r * (cell_h + gap)
+            self._add_zone_box(slide, int(x), int(y), int(cell_w), int(cell_h),
+                label=item["title"], body=item["body"],
+                label_size=Pt(18), body_size=Pt(14))
+
+    def build_split_text(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        gap = Inches(0.5)
+        col_w = (CONTENT_W - gap) / 2
+        y = BODY_TOP + Inches(0.1)
+        box_h = BODY_H - Inches(0.3)
+
+        for i, side in enumerate([sd.split_left, sd.split_right]):
+            x = MARGIN_L + i * (col_w + gap)
+            label = side.get("label", "")
+            body = side.get("body", "")
+            self._add_zone_box(slide, int(x), int(y), int(col_w), int(box_h),
+                label=label, body=body,
+                label_size=Pt(20), body_size=Pt(16))
+
+    def build_code(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        gap = Inches(0.4)
+        code_w = int(CONTENT_W * 0.55)
+        desc_w = int(CONTENT_W - code_w - gap)
+
+        # Left: dark code box
+        bg = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(MARGIN_L), int(BODY_TOP), code_w, int(BODY_H - Inches(0.2)))
+        bg.adjustments[0] = 0.02
+        bg.fill.solid()
+        bg.fill.fore_color.rgb = RGBColor(0x1E, 0x1E, 0x2E)
+        bg.line.fill.background()
+
+        tb = self._add_textbox(slide, int(MARGIN_L + Pt(16)), int(BODY_TOP + Pt(16)),
+            int(code_w - Pt(32)), int(BODY_H - Inches(0.2) - Pt(32)))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.text = sd.code_text
+        p.font.name = FONT_MONO
+        p.font.size = Pt(13)
+        p.font.color.rgb = RGBColor(0xCC, 0xCC, 0xCC)
+
+        # Right: explanation
+        if sd.code_desc:
+            desc_x = int(MARGIN_L + code_w + gap)
+            dtb = self._add_textbox(slide, desc_x, BODY_TOP, desc_w, int(BODY_H - Inches(0.2)))
+            dtf = dtb.text_frame
+            dtf.word_wrap = True
+            dtf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            dp = dtf.paragraphs[0]
+            dp.text = sd.code_desc
+            dp.font.name = FONT
+            dp.font.size = Pt(16)
+            dp.font.color.rgb = FG
+
+    def build_multi_result(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        items = sd.multi_result_items
+        if not items:
+            return
+
+        n = min(len(items), 4)
+        gap = Inches(0.3)
+        col_w = (CONTENT_W - gap * (n - 1)) / n
+        y = BODY_TOP + Inches(0.3)
+
+        for i, item in enumerate(items[:n]):
+            x = MARGIN_L + i * (col_w + gap)
+
+            # Large value
+            vtb = self._add_textbox(slide, int(x), int(y), int(col_w), Inches(1.5))
+            vtf = vtb.text_frame
+            vtf.vertical_anchor = MSO_ANCHOR.BOTTOM
+            vp = vtf.paragraphs[0]
+            vp.text = item["value"]
+            vp.font.name = FONT_HEAD
+            vp.font.size = Pt(40)
+            vp.font.bold = True
+            vp.font.color.rgb = PRIMARY
+            vp.alignment = PP_ALIGN.CENTER
+
+            # Metric name
+            mtb = self._add_textbox(slide, int(x), int(y + Inches(1.7)), int(col_w), Inches(0.5))
+            mp = mtb.text_frame.paragraphs[0]
+            mp.text = item["metric"]
+            mp.font.name = FONT_HEAD
+            mp.font.size = Pt(16)
+            mp.font.bold = True
+            mp.font.color.rgb = SECONDARY
+            mp.alignment = PP_ALIGN.CENTER
+
+            # Description
+            if item.get("desc"):
+                dtb = self._add_textbox(slide, int(x), int(y + Inches(2.3)), int(col_w), Inches(1.5))
+                dtf = dtb.text_frame
+                dtf.word_wrap = True
+                dp = dtf.paragraphs[0]
+                dp.text = item["desc"]
+                dp.font.name = FONT
+                dp.font.size = Pt(13)
+                dp.font.color.rgb = MUTED
+                dp.alignment = PP_ALIGN.CENTER
+
+    def build_takeaway(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        # Main message
+        if sd.takeaway_main:
+            tb = self._add_textbox(slide, Inches(1.5), BODY_TOP + Inches(0.3),
+                SW - Inches(3), Inches(2.0))
+            tf = tb.text_frame
+            tf.word_wrap = True
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            p = tf.paragraphs[0]
+            p.alignment = PP_ALIGN.CENTER
+            self._set_text_with_inline_math(p, sd.takeaway_main, Pt(28), PRIMARY)
+            p.font.bold = True
+
+        # Supporting points
+        if sd.takeaway_points:
+            pts_top = BODY_TOP + Inches(2.8)
+            pts_left = MARGIN_L + Inches(1.0)
+            pts_w = CONTENT_W - Inches(2.0)
+            for i, pt in enumerate(sd.takeaway_points):
+                py = int(pts_top + Inches(0.45) * i)
+                # Bullet dot
+                dot = slide.shapes.add_shape(MSO_SHAPE.OVAL,
+                    int(pts_left), int(py + Pt(5)), Pt(6), Pt(6))
+                dot.fill.solid()
+                dot.fill.fore_color.rgb = ACCENT
+                dot.line.fill.background()
+                # Text
+                ptb = self._add_textbox(slide, int(pts_left + Pt(16)), py,
+                    int(pts_w), Inches(0.4))
+                ptf = ptb.text_frame
+                ptf.word_wrap = True
+                self._set_text_with_inline_math(ptf.paragraphs[0], pt, Pt(18), FG)
+
+    def build_profile(self, sd: SlideData):
+        slide = self._blank_slide()
+        if sd.h1:
+            self._add_title(slide, sd.h1)
+
+        left_w = int(CONTENT_W * 0.35)
+        gap = Inches(0.4)
+        right_x = int(MARGIN_L + left_w + gap)
+        right_w = int(CONTENT_W - left_w - gap)
+
+        # Left: image or placeholder
+        if sd.image_path:
+            img_file = self._resolve_image(sd.image_path)
+            if img_file:
+                from PIL import Image
+                with Image.open(img_file) as im:
+                    iw, ih = im.size
+                max_w = left_w
+                max_h = int(BODY_H)
+                scale = min(max_w / (iw * 914400 / 96), max_h / (ih * 914400 / 96), 1.0)
+                pw = int(iw * scale * 914400 / 96)
+                ph = int(ih * scale * 914400 / 96)
+                ix = int(MARGIN_L + (left_w - pw) / 2)
+                iy = int(BODY_TOP + (BODY_H - ph) / 2)
+                slide.shapes.add_picture(img_file, ix, iy, pw, ph)
+        else:
+            # Placeholder circle
+            cd = min(left_w, int(BODY_H * 0.6))
+            cx = int(MARGIN_L + (left_w - cd) / 2)
+            cy = int(BODY_TOP + (BODY_H - cd) / 2)
+            circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, cx, cy, cd, cd)
+            circle.fill.solid()
+            circle.fill.fore_color.rgb = LIGHT
+            circle.line.color.rgb = MUTED
+            circle.line.width = Pt(1)
+
+        cur_y = BODY_TOP + Inches(0.3)
+
+        # Name
+        if sd.profile_name:
+            ntb = self._add_textbox(slide, right_x, int(cur_y), right_w, Inches(0.7))
+            np = ntb.text_frame.paragraphs[0]
+            np.text = sd.profile_name
+            np.font.name = FONT_HEAD
+            np.font.size = Pt(28)
+            np.font.bold = True
+            np.font.color.rgb = PRIMARY
+            cur_y += Inches(0.8)
+
+        # Affiliation
+        if sd.profile_affiliation:
+            atb = self._add_textbox(slide, right_x, int(cur_y), right_w, Inches(0.5))
+            ap = atb.text_frame.paragraphs[0]
+            ap.text = sd.profile_affiliation
+            ap.font.name = FONT
+            ap.font.size = Pt(18)
+            ap.font.color.rgb = SECONDARY
+            cur_y += Inches(0.7)
+
+        # Bio list
+        if sd.profile_bio:
+            btb = self._add_textbox(slide, right_x, int(cur_y), right_w,
+                int(BODY_H - (cur_y - BODY_TOP)))
+            btf = btb.text_frame
+            btf.word_wrap = True
+            first = True
+            for item in sd.profile_bio:
+                if first:
+                    p = btf.paragraphs[0]
+                    first = False
+                else:
+                    p = btf.add_paragraph()
+                run = p.add_run()
+                run.text = "\u2022 " + item
+                run.font.name = FONT
+                run.font.size = Pt(15)
+                run.font.color.rgb = FG
+                p.space_before = Pt(6)
+
     # ---------- Build all ----------
 
     def build_all(self, slides: list[SlideData]):
@@ -2717,6 +3797,27 @@ class PptxBuilder:
             "overview": self.build_overview,
             "result": self.build_result,
             "steps": self.build_steps,
+            # New slide types (v2)
+            "quote": self.build_quote,
+            "history": self.build_history,
+            "panorama": self.build_panorama,
+            "kpi": self.build_kpi,
+            "pros-cons": self.build_pros_cons,
+            "definition": self.build_definition,
+            "diagram": self.build_diagram,
+            "gallery-img": self.build_gallery_img,
+            "highlight": self.build_highlight,
+            "checklist": self.build_checklist,
+            "annotation": self.build_annotation,
+            "before-after": self.build_before_after,
+            "funnel": self.build_funnel,
+            "stack": self.build_stack,
+            "card-grid": self.build_card_grid,
+            "split-text": self.build_split_text,
+            "code": self.build_code,
+            "multi-result": self.build_multi_result,
+            "takeaway": self.build_takeaway,
+            "profile": self.build_profile,
         }
 
         for sd in slides:

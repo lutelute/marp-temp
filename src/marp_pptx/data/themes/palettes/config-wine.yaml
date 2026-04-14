@@ -1,0 +1,26 @@
+name: wine
+title: Wine — エレガント
+description: ワインレッド。上部アクセント。明朝体。格式ある場に。
+colors:
+  primary: '#2b0f1b'
+  secondary: '#7a2048'
+  accent: '#c9a227'
+  fg: '#2b1a1a'
+  muted: '#9a7a7a'
+  light: '#faf5f5'
+  border: '#e8d8d8'
+fonts:
+  head: '''Georgia'', ''Hiragino Mincho ProN'', serif'
+  body: '''Georgia'', ''Hiragino Mincho ProN'', serif'
+layout:
+  h1_deco: top-line
+  h1_deco_width: 4
+  h1_deco_color: accent
+  title_bg: white
+  title_align: center
+  divider_align: center
+  end_bg: white
+  box_style: border-only
+  box_radius: 0.01
+  box_fill: false
+  spacing: normal

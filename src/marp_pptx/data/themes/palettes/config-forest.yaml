@@ -1,0 +1,26 @@
+name: forest
+title: Forest — 落ち着いた自然
+description: 深緑。広い余白。柔らかい角丸。環境・農学系に。
+colors:
+  primary: '#1b3a2d'
+  secondary: '#2d6a4f'
+  accent: '#d4a373'
+  fg: '#1a2e1a'
+  muted: '#7a9a7a'
+  light: '#f0f5f0'
+  border: '#d4e0d4'
+fonts:
+  head: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: left-bar
+  h1_deco_width: 6
+  h1_deco_color: secondary
+  title_bg: light
+  title_align: center
+  divider_align: center
+  end_bg: light
+  box_style: filled
+  box_radius: 0.08
+  box_fill: true
+  spacing: generous

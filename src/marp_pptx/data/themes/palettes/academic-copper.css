@@ -1,0 +1,47 @@
+/*!
+ * @theme academic-copper
+ * @auto-scaling true
+ * Copper — インダストリアル — 銅色。二重線。重厚な構造。工学系に。
+ */
+@import 'academic';
+
+:root {
+  --color-fg:          #2a1c10;
+  --color-primary:     #1c1410;
+  --color-secondary:   #a0522d;
+  --color-accent:      #daa520;
+  --color-muted:       #a09080;
+  --color-light:       #faf6f0;
+  --color-border:      #e8dcd0;
+  --font-head: 'Avenir Next', 'Hiragino Sans', sans-serif;
+  --font-body: 'Avenir Next', 'Hiragino Sans', sans-serif;
+}
+
+section { padding: 48px 72px 40px; line-height: 1.55; }
+section h1 { border-bottom: 4px double var(--color-secondary); padding-bottom: 8px; border-left: none; padding-left: 0; }
+
+section.title {
+  background: var(--color-light);
+  align-items: flex-start;
+  text-align: left;
+}
+section.title h1 { color: var(--color-primary); border: none; padding-left: 0; }
+section.title h2, section.title p { color: var(--color-muted); }
+
+section.divider {
+  align-items: flex-start;
+  text-align: left;
+  padding-left:100px;
+}
+section.divider h1 { border: none; padding-left: 0; }
+
+section.end { background: var(--color-light); }
+section.end h1 { color: var(--color-primary); border: none; padding-left: 0; }
+section.end p { color: var(--color-primary); opacity: 0.7; }
+
+.box, .box-accent, .box-primary {
+  border-radius: 2px; background: var(--color-light); border: 2px solid var(--color-secondary);
+}
+.box-accent { border-left: 4px solid var(--color-primary); }
+.box-primary { border-left: 4px solid var(--color-secondary); }
+.conclusion { border-radius: 2px; }

@@ -1,0 +1,26 @@
+name: earth
+title: Earth — ウォーム
+description: 茶系アースカラー。カード型ボックス。暖かい印象。
+colors:
+  primary: '#2c1810'
+  secondary: '#8b6f47'
+  accent: '#cb997e'
+  fg: '#2a2018'
+  muted: '#a09080'
+  light: '#f8f5f0'
+  border: '#e8e0d0'
+fonts:
+  head: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: left-bar
+  h1_deco_width: 6
+  h1_deco_color: accent
+  title_bg: light
+  title_align: left
+  divider_align: left
+  end_bg: light
+  box_style: card
+  box_radius: 0.05
+  box_fill: true
+  spacing: normal

@@ -1,0 +1,26 @@
+name: navy
+title: Navy — クラシック学会
+description: 深い紺。下線アクセント。正統派の学会スタイル。
+colors:
+  primary: '#0d1b2a'
+  secondary: '#1b4965'
+  accent: '#f4845f'
+  fg: '#1a1a2e'
+  muted: '#8898aa'
+  light: '#f0f4f8'
+  border: '#d9e2ec'
+fonts:
+  head: '''Georgia'', ''Hiragino Mincho ProN'', serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: bottom-line
+  h1_deco_width: 3
+  h1_deco_color: accent
+  title_bg: gradient
+  title_align: center
+  divider_align: center
+  end_bg: dark
+  box_style: filled
+  box_radius: 0.06
+  box_fill: true
+  spacing: normal

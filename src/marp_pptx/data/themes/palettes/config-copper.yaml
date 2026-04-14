@@ -1,0 +1,26 @@
+name: copper
+title: Copper — インダストリアル
+description: 銅色。二重線。重厚な構造。工学系に。
+colors:
+  primary: '#1c1410'
+  secondary: '#a0522d'
+  accent: '#daa520'
+  fg: '#2a1c10'
+  muted: '#a09080'
+  light: '#faf6f0'
+  border: '#e8dcd0'
+fonts:
+  head: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: double-bottom
+  h1_deco_width: 4
+  h1_deco_color: secondary
+  title_bg: light
+  title_align: left
+  divider_align: left
+  end_bg: light
+  box_style: card
+  box_radius: 0.01
+  box_fill: true
+  spacing: compact

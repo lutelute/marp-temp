@@ -1,0 +1,26 @@
+name: mono
+title: Mono — ミニマルモノクロ
+description: 黒基調。左バー 3色。コンパクト。研究発表の定番。
+colors:
+  primary: '#1a1a1a'
+  secondary: '#3d5a80'
+  accent: '#e07a5f'
+  fg: '#1a1a1a'
+  muted: '#999999'
+  light: '#f7f7f7'
+  border: '#e0e0e0'
+fonts:
+  head: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: left-bar
+  h1_deco_width: 8
+  h1_deco_color: primary
+  title_bg: white
+  title_align: left
+  divider_align: left
+  end_bg: white
+  box_style: border-only
+  box_radius: 0.02
+  box_fill: false
+  spacing: compact

@@ -596,6 +596,419 @@ $$\sum_{j} M_{ij} \le k, \quad \forall i$$
 
 ---
 
+<!-- _class: quote -->
+
+# [Quote] 引用テンプレート
+
+<div class="qt-text">科学とは、知識の体系ではなく、思考の方法である。</div>
+
+<div class="qt-source">Carl Sagan, The Demon-Haunted World (1995)</div>
+
+---
+
+<!-- _class: history -->
+
+# [History] 年表テンプレート
+
+<div class="hs-container">
+
+<div class="hs-item">
+  <span class="hs-year">2017</span>
+  <span class="hs-event">Transformer アーキテクチャの提案 (Vaswani et al.)</span>
+</div>
+
+<div class="hs-item">
+  <span class="hs-year">2019</span>
+  <span class="hs-event">BERT による事前学習モデルの普及</span>
+</div>
+
+<div class="hs-item">
+  <span class="hs-year">2022</span>
+  <span class="hs-event">Flash Attention による IO 最適化</span>
+</div>
+
+<div class="hs-item">
+  <span class="hs-year">2025</span>
+  <span class="hs-event">スパース注意機構の理論的保証（本研究）</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: panorama -->
+
+# [Panorama] パノラマテンプレート
+
+<div class="pn-text">左側にリードテキストを配置し、全体像を説明する。右側には概念図やアーキテクチャ図を大きく表示する。テキストと図の組み合わせで、直感的な理解を促す。</div>
+
+![w:600](assets/architecture.svg)
+
+---
+
+<!-- _class: kpi -->
+
+# [KPI] 主要指標テンプレート
+
+<div class="kpi-container">
+
+<div class="kpi-item">
+  <span class="kpi-value">89.4%</span>
+  <span class="kpi-label">分類精度</span>
+</div>
+
+<div class="kpi-item">
+  <span class="kpi-value">2.4x</span>
+  <span class="kpi-label">処理速度向上</span>
+</div>
+
+<div class="kpi-item">
+  <span class="kpi-value">-40%</span>
+  <span class="kpi-label">メモリ削減</span>
+</div>
+
+<div class="kpi-item">
+  <span class="kpi-value">127M</span>
+  <span class="kpi-label">パラメータ数</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: pros-cons -->
+
+# [Pros-Cons] 利点・制約テンプレート
+
+<div class="pc-pros">
+<li>計算量を 60% 削減</li>
+<li>既存パイプラインへのドロップイン置換が可能</li>
+<li>理論的な収束保証あり</li>
+<li>GPU 並列化に対応</li>
+</div>
+
+<div class="pc-cons">
+<li>短系列タスクではオーバーヘッドが大きい</li>
+<li>マスク生成器の追加学習が必要</li>
+<li>動的マスクの解釈性が限定的</li>
+</div>
+
+---
+
+<!-- _class: definition -->
+
+# [Definition] 定義テンプレート
+
+<div class="df-term">スパースアテンション (Sparse Attention)</div>
+
+<div class="df-body">入力系列の全ペア間ではなく、選択的に注意重みを計算する手法。計算量を $O(n^2)$ から $O(n\sqrt{n})$ 以下に削減しつつ、タスク性能を維持する。</div>
+
+<div class="df-note">関連概念: Self-Attention, Multi-Head Attention, Linear Attention</div>
+
+---
+
+<!-- _class: diagram -->
+
+# [Diagram] 大型図版テンプレート
+
+![w:900](assets/architecture.svg)
+
+<div class="caption">Fig. 1. 提案手法の全体構成。入力から出力までのデータフロー。</div>
+
+---
+
+<!-- _class: gallery-img -->
+
+# [Gallery-Img] 画像ギャラリーテンプレート
+
+<div class="gi-container">
+
+<div class="gi-item">
+
+![w:400](assets/architecture.svg)
+
+<div class="gi-caption">条件 A</div>
+</div>
+
+<div class="gi-item">
+
+![w:400](assets/learning-curve.svg)
+
+<div class="gi-caption">条件 B</div>
+</div>
+
+<div class="gi-item">
+
+![w:400](assets/architecture.svg)
+
+<div class="gi-caption">条件 C</div>
+</div>
+
+<div class="gi-item">
+
+![w:400](assets/learning-curve.svg)
+
+<div class="gi-caption">条件 D</div>
+</div>
+
+</div>
+
+---
+
+<!-- _class: highlight -->
+
+# [Highlight] ハイライトテンプレート
+
+<div class="hl-text">動的スパースマスクにより、計算量を 60% 削減しながら精度を維持できる</div>
+
+---
+
+<!-- _class: checklist -->
+
+# [Checklist] チェックリストテンプレート
+
+<div class="cl-container">
+<li class="done">データセットの前処理と分割</li>
+<li class="done">ベースラインモデルの実装と検証</li>
+<li class="done">提案手法の実装</li>
+<li>ハイパーパラメータ探索</li>
+<li>統計的有意性検定</li>
+<li>アブレーション実験</li>
+</div>
+
+---
+
+<!-- _class: annotation -->
+
+# [Annotation] 注釈付き図テンプレート
+
+<div class="an-figure">
+
+![w:500](assets/architecture.svg)
+
+</div>
+
+<div class="an-notes">
+<li>入力層で BPE トークナイズを適用</li>
+<li>中間層でスパースマスクを動的生成</li>
+<li>出力層で次トークン予測を実行</li>
+<li>マスク生成器は 2M パラメータ</li>
+</div>
+
+---
+
+<!-- _class: before-after -->
+
+# [Before-After] 改善前後テンプレート
+
+<div class="ba-before">
+  <span class="ba-label">Before</span>
+  <span class="ba-body">Full Attention で全ペアを計算。系列長 4096 で OOM が頻発。学習に 72 時間。</span>
+</div>
+
+<div class="ba-after">
+  <span class="ba-label">After</span>
+  <span class="ba-body">Sparse Attention で計算量 60% 削減。系列長 16384 でも安定動作。学習 30 時間。</span>
+</div>
+
+---
+
+<!-- _class: funnel -->
+
+# [Funnel] ファネルテンプレート
+
+<div class="fn-container">
+
+<div class="fn-stage">
+  <span class="fn-label">Raw Data</span>
+  <span class="fn-value">1,000,000 件</span>
+</div>
+
+<div class="fn-stage">
+  <span class="fn-label">前処理済み</span>
+  <span class="fn-value">850,000 件</span>
+</div>
+
+<div class="fn-stage">
+  <span class="fn-label">品質フィルタ後</span>
+  <span class="fn-value">500,000 件</span>
+</div>
+
+<div class="fn-stage">
+  <span class="fn-label">最終データセット</span>
+  <span class="fn-value">100,000 件</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: stack -->
+
+# [Stack] スタックテンプレート
+
+<div class="sk-container">
+
+<div class="sk-layer">
+  <span class="sk-name">Application</span>
+  <span class="sk-desc">推論 API、バッチ処理、リアルタイム予測</span>
+</div>
+
+<div class="sk-layer">
+  <span class="sk-name">Model</span>
+  <span class="sk-desc">Sparse Attention Block、マスク生成器</span>
+</div>
+
+<div class="sk-layer">
+  <span class="sk-name">Framework</span>
+  <span class="sk-desc">PyTorch 2.0、CUDA カーネル、Mixed Precision</span>
+</div>
+
+<div class="sk-layer">
+  <span class="sk-name">Infrastructure</span>
+  <span class="sk-desc">NVIDIA A100 x 4、NVLink、高速ストレージ</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: card-grid -->
+
+# [Card-Grid] カードグリッドテンプレート
+
+<div class="cg-container">
+
+<div class="cg-card">
+  <span class="cg-title">条件 A: 短系列</span>
+  <span class="cg-body">系列長 512。標準的な NLU タスク。</span>
+</div>
+
+<div class="cg-card">
+  <span class="cg-title">条件 B: 中系列</span>
+  <span class="cg-body">系列長 2048。文書分類・要約タスク。</span>
+</div>
+
+<div class="cg-card">
+  <span class="cg-title">条件 C: 長系列</span>
+  <span class="cg-body">系列長 8192。長距離依存タスク。</span>
+</div>
+
+<div class="cg-card">
+  <span class="cg-title">条件 D: 超長系列</span>
+  <span class="cg-body">系列長 16384。本研究の主要ターゲット。</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: split-text -->
+
+# [Split-Text] 分割テキストテンプレート
+
+<div class="sp-left">
+  <span class="sp-label">仮説</span>
+  <span class="sp-body">動的スパースマスクを導入することで、計算量を削減しつつ精度を維持できる。</span>
+</div>
+
+<div class="sp-right">
+  <span class="sp-label">結果</span>
+  <span class="sp-body">3つのベンチマークで精度を維持しつつ、計算量を平均 60% 削減。</span>
+</div>
+
+---
+
+<!-- _class: code -->
+
+# [Code] コードテンプレート
+
+<div class="cd-code">
+
+```python
+class SparseAttention(nn.Module):
+    def __init__(self, d_model, n_heads):
+        super().__init__()
+        self.mask_gen = MaskGenerator(d_model)
+        self.attn = nn.MultiheadAttention(
+            d_model, n_heads
+        )
+
+    def forward(self, x):
+        mask = self.mask_gen(x)
+        return self.attn(x, x, x,
+                         attn_mask=mask)
+```
+
+</div>
+
+<div class="cd-desc">MaskGenerator がスパースマスクを動的生成し、標準の MultiheadAttention に渡す。</div>
+
+---
+
+<!-- _class: multi-result -->
+
+# [Multi-Result] 複数結果テンプレート
+
+<div class="mr-container">
+
+<div class="mr-item">
+  <span class="mr-metric">Perplexity</span>
+  <span class="mr-value">17.9</span>
+  <span class="mr-desc">Full Attention と同等の言語モデリング性能</span>
+</div>
+
+<div class="mr-item">
+  <span class="mr-metric">Speedup</span>
+  <span class="mr-value">2.4x</span>
+  <span class="mr-desc">系列長 8192 での推論速度</span>
+</div>
+
+<div class="mr-item">
+  <span class="mr-metric">Memory</span>
+  <span class="mr-value">-40%</span>
+  <span class="mr-desc">ピークメモリ使用量の削減率</span>
+</div>
+
+</div>
+
+---
+
+<!-- _class: takeaway -->
+
+# [Takeaway] キーメッセージテンプレート
+
+<div class="ta-main">動的スパース注意機構は、精度を犠牲にせず計算効率を大幅に改善できる</div>
+
+<div class="ta-points">
+<li>3つのベンチマークで SOTA と同等の精度を達成</li>
+<li>計算量を平均 60% 削減し、長系列タスクへの適用を実現</li>
+<li>既存の効率化手法と直交的に併用可能</li>
+</div>
+
+---
+
+<!-- _class: profile -->
+
+# [Profile] プロフィールテンプレート
+
+<div class="pf-container">
+
+<div class="pf-name">山田 太郎</div>
+
+<div class="pf-affiliation">〇〇大学 工学研究科 情報工学専攻</div>
+
+<div class="pf-bio">
+<li>研究テーマ: 効率的な注意機構の設計と理論解析</li>
+<li>所属: 自然言語処理研究室</li>
+<li>学会活動: ACL 2025、NeurIPS 2024 Workshop</li>
+<li>連絡先: yamada@example.ac.jp</li>
+</div>
+
+</div>
+
+---
+
 <!-- _class: summary -->
 
 # [Summary] まとめテンプレート（Q&A 表示用）

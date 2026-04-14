@@ -1,0 +1,885 @@
+/*!
+ * @theme academic
+ * @auto-scaling true
+ *
+ * Academic conference presentation theme for Marp.
+ * Simple, professional color scheme.
+ */
+
+@import 'default';
+
+/* ============================================================
+   1. ROOT VARIABLES
+   ============================================================ */
+:root {
+  --color-bg:          #ffffff;
+  --color-fg:          #1a1a1a;
+  --color-primary:     #1a1a1a;
+  --color-secondary:   #3d5a80;
+  --color-accent:      #e07a5f;
+  --color-muted:       #999999;
+  --color-light:       #f7f7f7;
+  --color-border:      #e0e0e0;
+  --color-highlight:   #fff3cd;
+  --color-highlight-b: #e8e8e8;
+
+  --font-head: 'Avenir Next', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  --font-body: 'Avenir Next', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  --font-ea:   'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI', sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ============================================================
+   2. BASE SECTION (SLIDE)
+   ============================================================ */
+section {
+  font-family: var(--font-body);
+  color: var(--color-fg);
+  background: var(--color-bg);
+  padding: 60px 96px 52px;
+  font-size: 24px;
+  line-height: 1.6;
+  justify-content: flex-start;
+}
+
+
+/* ============================================================
+   3. HEADINGS
+   ============================================================ */
+section h1 {
+  font-family: var(--font-head);
+  color: var(--color-primary);
+  font-size: 1.5em;
+  font-weight: 700;
+  border-left: 8px solid var(--color-primary);
+  padding-left: 16px;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+section h2 {
+  font-family: var(--font-head);
+  color: var(--color-secondary);
+  font-size: 1.3em;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+section h3 {
+  font-family: var(--font-head);
+  color: var(--color-muted);
+  font-size: 1.05em;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   4. TITLE SLIDE
+   ============================================================ */
+section.title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  padding: 80px;
+}
+
+section.title::before { display: none; }
+
+section.title h1 {
+  color: var(--color-primary);
+  font-size: 2.4em;
+  border-left: none;
+  padding-left: 0;
+  margin-bottom: 16px;
+}
+
+section.title h2 {
+  color: var(--color-secondary);
+  font-size: 1.15em;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+
+section.title p {
+  color: var(--color-muted);
+  font-size: 0.9em;
+  margin: 4px 0;
+}
+
+/* ============================================================
+   5. SECTION DIVIDER SLIDE
+   ============================================================ */
+section.divider {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--color-bg);
+  padding-left: 120px;
+}
+
+section.divider h1 {
+  color: var(--color-primary);
+  font-size: 1.8em;
+  border-left: none;
+  padding-left: 0;
+}
+
+section.divider h2 {
+  color: var(--color-muted);
+  font-weight: 400;
+  font-size: 1em;
+}
+
+/* ============================================================
+   6. MULTI-COLUMN LAYOUTS
+   ============================================================ */
+
+section.cols-2 .columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+section.cols-2-wide-l .columns {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+section.cols-2-wide-r .columns {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 40px;
+  align-items: start;
+}
+
+section.cols-3 .columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+/* --- Sandwich: top full + cols + bottom full --- */
+section.sandwich .top,
+section.sandwich .bottom {
+  width: 100%;
+}
+
+section.sandwich .columns {
+  display: grid;
+  gap: 30px;
+  align-items: start;
+  margin: 16px 0;
+}
+
+section.sandwich .columns.c2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+section.sandwich .columns.c3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* ============================================================
+   7. EQUATION SLIDE
+   ============================================================ */
+section.equation {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+section.equation h1 {
+  align-self: flex-start;
+  width: 100%;
+}
+
+section.equation .eq-main {
+  font-size: 1.75em;
+  margin: 28px 0 24px;
+  text-align: center;
+  width: 100%;
+}
+
+section.equation .eq-desc {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 28px;
+  font-size: 0.82em;
+  color: var(--color-fg);
+  margin-top: 12px;
+  max-width: 85%;
+}
+
+section.equation .eq-desc .sym {
+  font-weight: 600;
+  text-align: right;
+  color: var(--color-secondary);
+}
+
+/* Underline-style highlights for equation descriptions */
+.eq-highlight {
+  border-bottom: 3px solid var(--color-accent);
+  padding-bottom: 1px;
+  display: inline-block;
+}
+
+.eq-highlight-b {
+  border-bottom: 3px solid var(--color-secondary);
+  padding-bottom: 1px;
+  display: inline-block;
+}
+
+/* ============================================================
+   8. FIGURE SLIDE
+   ============================================================ */
+section.figure {
+  text-align: center;
+}
+
+section.figure h1 {
+  text-align: left;
+}
+
+section.figure img {
+  max-height: 55%;
+  max-width: 90%;
+  object-fit: contain;
+  margin: 8px auto;
+  display: block;
+}
+
+section.figure .caption {
+  font-size: 0.75em;
+  color: var(--color-fg);
+  margin-top: 8px;
+}
+
+section.figure .caption .fig-num {
+  font-weight: 700;
+}
+
+section.figure .description {
+  font-size: 0.85em;
+  text-align: left;
+  margin-top: 12px;
+}
+
+/* Figure numbering utility */
+.fig-num {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.tab-num {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* ============================================================
+   9. TABLE SLIDE
+   ============================================================ */
+section.table-slide table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82em;
+  margin: 12px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+section.table-slide table thead {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+section.table-slide table th {
+  padding: 12px 18px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95em;
+  letter-spacing: 0.02em;
+}
+
+section.table-slide table th:first-child {
+  border-radius: 6px 0 0 0;
+}
+
+section.table-slide table th:last-child {
+  border-radius: 0 6px 0 0;
+}
+
+section.table-slide table td {
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+section.table-slide table tbody tr:nth-child(even) {
+  background: var(--color-light);
+}
+
+section.table-slide table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+section.table-slide table tbody tr:last-child td:first-child {
+  border-radius: 0 0 0 6px;
+}
+
+section.table-slide table tbody tr:last-child td:last-child {
+  border-radius: 0 0 6px 0;
+}
+
+/* Highlight row for "ours" */
+section.table-slide table tbody tr.hl,
+section.table-slide table tbody tr:last-child {
+  /* last row often = "ours" — override as needed */
+}
+
+/* ============================================================
+   10. REFERENCES SLIDE
+   ============================================================ */
+section.references {
+  font-size: 0.7em;
+  line-height: 1.7;
+}
+
+section.references h1 {
+  font-size: 1.6em;
+}
+
+section.references ol {
+  padding-left: 24px;
+  column-count: 1;
+}
+
+section.references ol li {
+  margin-bottom: 6px;
+  color: var(--color-fg);
+}
+
+section.references ol li .author {
+  font-weight: 600;
+}
+
+section.references ol li .title {
+  font-style: italic;
+}
+
+section.references ol li .venue {
+  color: var(--color-muted);
+}
+
+section.references.cols-2-ref ol {
+  column-count: 2;
+  column-gap: 40px;
+}
+
+/* ============================================================
+   11. TIMELINE / HISTORY FLOW SLIDE
+   ============================================================ */
+
+/* --- Vertical timeline --- */
+section.timeline .tl-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 36px;
+}
+
+section.timeline .tl-container::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-border);
+}
+
+section.timeline .tl-item {
+  position: relative;
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  background: var(--color-light);
+  border-radius: 6px;
+  border-left: none;
+}
+
+section.timeline .tl-item::before {
+  content: '';
+  position: absolute;
+  left: -32px;
+  top: 14px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-secondary);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 2px var(--color-secondary);
+}
+
+section.timeline .tl-item.highlight {
+  background: rgba(233, 69, 96, 0.08);
+  border: 1px solid rgba(233, 69, 96, 0.25);
+}
+
+section.timeline .tl-item.highlight::before {
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+section.timeline .tl-year {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.9em;
+  display: inline-block;
+  min-width: 50px;
+}
+
+section.timeline .tl-text {
+  color: var(--color-fg);
+  font-size: 0.82em;
+}
+
+section.timeline .tl-detail {
+  color: var(--color-muted);
+  font-size: 0.72em;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* --- Horizontal timeline --- */
+section.timeline-h .tl-h-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 32px;
+  padding: 0 10px;
+}
+
+section.timeline-h .tl-h-container::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 32px;
+  height: 3px;
+  background: var(--color-border);
+}
+
+section.timeline-h .tl-h-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  text-align: center;
+  padding: 0 4px;
+}
+
+section.timeline-h .tl-h-item::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-secondary);
+  border: 3px solid var(--color-bg);
+  box-shadow: 0 0 0 2px var(--color-secondary);
+  margin-bottom: 10px;
+  z-index: 1;
+}
+
+section.timeline-h .tl-h-item.highlight::before {
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+section.timeline-h .tl-h-year {
+  font-weight: 700;
+  font-size: 0.85em;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+}
+
+section.timeline-h .tl-h-text {
+  font-size: 0.7em;
+  color: var(--color-fg);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+section.timeline-h .tl-h-block {
+  background: var(--color-light);
+  border-radius: 5px;
+  padding: 8px 10px;
+  margin-top: 4px;
+  width: 100%;
+}
+
+section.timeline-h .tl-h-item.highlight .tl-h-block {
+  background: rgba(233, 69, 96, 0.08);
+  border: 1px solid rgba(233, 69, 96, 0.25);
+}
+
+section.timeline-h .tl-h-detail {
+  font-size: 0.6em;
+  color: var(--color-muted);
+  line-height: 1.3;
+}
+
+/* ============================================================
+   12. UTILITY CLASSES
+   ============================================================ */
+
+/* Box / Card — thin border, no fill */
+.box {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 16px 20px;
+  margin: 8px 0;
+}
+
+.box-accent {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 0 4px 4px 0;
+  padding: 16px 20px;
+  margin: 8px 0;
+}
+
+.box-primary {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-secondary);
+  border-radius: 0 4px 4px 0;
+  padding: 16px 20px;
+  margin: 8px 0;
+}
+
+/* Blockquote — ❝ mark + left border */
+section blockquote,
+.quote {
+  position: relative;
+  border-left: 3px solid var(--color-primary);
+  padding: 12px 24px 12px 28px;
+  margin: 20px 0;
+  font-size: 0.95em;
+  line-height: 1.7;
+}
+
+section blockquote::before,
+.quote::before {
+  content: '\201C\201C';
+  position: absolute;
+  left: -8px;
+  top: -8px;
+  font-size: 1.8em;
+  color: var(--color-secondary);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Lead text (top of sandwich) */
+.lead {
+  font-size: 1.05em;
+  color: var(--color-secondary);
+  font-weight: 500;
+  line-height: 1.6;
+  padding: 8px 0;
+}
+
+/* Conclusion text (bottom of sandwich) */
+.conclusion {
+  background: var(--color-light);
+  color: var(--color-fg);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 0 4px 4px 0;
+  padding: 16px 24px;
+  margin-top: 8px;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.conclusion strong {
+  color: var(--color-primary);
+}
+
+/* Small / muted text */
+.small { font-size: 0.75em; }
+.muted { color: var(--color-muted); }
+.bold  { font-weight: 700; }
+.center { text-align: center; }
+
+/* Footnote */
+.footnote {
+  position: absolute;
+  bottom: 24px;
+  left: 60px;
+  right: 60px;
+  font-size: 0.6em;
+  color: var(--color-muted);
+  border-top: 1px solid var(--color-border);
+  padding-top: 6px;
+}
+
+/* Slide number */
+section::after {
+  font-size: 0.6em;
+  color: var(--color-muted);
+}
+
+/* ============================================================
+   13. CODE BLOCKS
+   ============================================================ */
+section code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-light);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+section pre {
+  background: #1e1e2e;
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+
+section pre code {
+  background: transparent;
+  color: #cdd6f4;
+  padding: 0;
+}
+
+/* ============================================================
+   14. LISTS
+   ============================================================ */
+section ul, section ol {
+  margin-left: 8px;
+}
+
+section li {
+  margin-bottom: 6px;
+}
+
+section li::marker {
+  color: var(--color-secondary);
+}
+
+/* ============================================================
+   15. IMAGES
+   ============================================================ */
+section img {
+  border-radius: 4px;
+}
+
+/* ============================================================
+   16. THANK YOU / END SLIDE
+   ============================================================ */
+section.end {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+section.end h1 {
+  color: var(--color-primary);
+  border-left: none;
+  padding-left: 0;
+  font-size: 2.5em;
+}
+
+section.end p {
+  color: var(--color-muted);
+  font-size: 1em;
+}
+
+/* ============================================================
+   17. AGENDA / OUTLINE SLIDE
+   ============================================================ */
+section.agenda {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+section.agenda h1 {
+  /* inherits border-bottom from base h1 */
+}
+
+section.agenda ol {
+  list-style: none;
+  counter-reset: agenda-counter;
+  padding-left: 0;
+  margin-top: 12px;
+}
+
+section.agenda ol li {
+  counter-increment: agenda-counter;
+  font-size: 1.1em;
+  color: var(--color-fg);
+  margin-bottom: 14px;
+  padding-left: 48px;
+  position: relative;
+  line-height: 1.5;
+}
+
+section.agenda ol li::before {
+  content: counter(agenda-counter);
+  position: absolute;
+  left: 0;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--color-secondary);
+  line-height: 1;
+  top: 2px;
+}
+
+section.agenda ol li.current {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+section.agenda ol li.current::before {
+  color: var(--color-accent);
+}
+
+/* ============================================================
+   18. RESEARCH QUESTION / HYPOTHESIS SLIDE
+   ============================================================ */
+section.rq {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: var(--color-bg);
+}
+
+section.rq h1 {
+  align-self: flex-start;
+  text-align: left;
+  width: 100%;
+}
+
+section.rq .rq-main {
+  font-size: 1.4em;
+  font-weight: 600;
+  color: var(--color-primary);
+  max-width: 80%;
+  margin: 24px auto;
+  text-align: center;
+  line-height: 1.5;
+}
+
+section.rq .rq-sub {
+  font-size: 0.85em;
+  color: var(--color-muted);
+  text-align: center;
+  max-width: 80%;
+  margin: 8px auto 0;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   19. RESULT DUAL (TWO RESULTS SIDE BY SIDE)
+   ============================================================ */
+section.result-dual {
+  justify-content: flex-start;
+}
+
+section.result-dual .results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  width: 100%;
+  align-items: start;
+  margin-top: 8px;
+}
+
+section.result-dual .result-item {
+  text-align: center;
+}
+
+section.result-dual .result-item img {
+  max-height: 55%;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+section.result-dual .result-item .caption {
+  font-size: 0.72em;
+  text-align: center;
+  color: var(--color-fg);
+  margin-top: 8px;
+}
+
+/* ============================================================
+   20. SUMMARY / Q&A SLIDE
+   ============================================================ */
+section.summary {
+  background: var(--color-bg);
+  padding: 48px 60px 40px;
+  justify-content: flex-start;
+}
+
+section.summary .summary-points {
+  list-style: decimal;
+  padding-left: 24px;
+  margin-top: 12px;
+}
+
+section.summary .summary-points li {
+  font-size: 1.05em;
+  line-height: 1.8;
+  border-left: 4px solid var(--color-accent);
+  padding-left: 16px;
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   21. APPENDIX SLIDE
+   ============================================================ */
+section.appendix {
+  font-size: 0.85em;
+  justify-content: flex-start;
+}
+
+section.appendix h1 {
+  font-size: 1.4em;
+  color: var(--color-muted);
+  border-bottom: 2px solid var(--color-border);
+}
+
+section.appendix .appendix-label {
+  position: absolute;
+  top: 24px;
+  right: 60px;
+  font-size: 0.65em;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}

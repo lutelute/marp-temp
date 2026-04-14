@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "marp-pptx"
+version = "0.1.0"
+description = "Convert Marp markdown to editable PowerPoint with 49 semantic slide types"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "python-pptx>=0.6.21",
+    "lxml>=4.9",
+    "Pillow>=9.0",
+    "matplotlib>=3.5",
+    "click>=8.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+web = ["flask>=3.0", "flask-cors>=4.0"]
+dev = ["pytest", "pytest-cov", "ruff"]
+
+[project.scripts]
+marp-pptx = "marp_pptx.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/marp_pptx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

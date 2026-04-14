@@ -1,0 +1,26 @@
+name: ocean
+title: Ocean — テック・モダン
+description: 深海ブルー。グラデーション。情報工学・テック系に。
+colors:
+  primary: '#0a1628'
+  secondary: '#1d6fa5'
+  accent: '#ff9e6d'
+  fg: '#0f1a2e'
+  muted: '#7a8fa5'
+  light: '#f0f5fa'
+  border: '#d0dde8'
+fonts:
+  head: '''Futura'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: bottom-line
+  h1_deco_width: 3
+  h1_deco_color: secondary
+  title_bg: gradient
+  title_align: center
+  divider_align: center
+  end_bg: dark
+  box_style: border-only
+  box_radius: 0.04
+  box_fill: false
+  spacing: compact

@@ -3,4 +3,21 @@ node_modules/
 *.pdf
 *.pptx
 !pptx/reference.pptx
-pptx/__pycache__/
+__pycache__/
+*.pyc
+
+# Virtual env
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Generated/user-provided images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+assets/

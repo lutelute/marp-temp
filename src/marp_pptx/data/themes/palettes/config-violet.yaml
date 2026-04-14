@@ -1,0 +1,26 @@
+name: violet
+title: Violet — クリエイティブ
+description: 紫基調。ピンクアクセント。創造的な研究発表に。
+colors:
+  primary: '#1a0a2e'
+  secondary: '#5c4d7d'
+  accent: '#e6739f'
+  fg: '#1a1a2e'
+  muted: '#8a7aa0'
+  light: '#f5f0fa'
+  border: '#e0d8e8'
+fonts:
+  head: '''Futura'', ''Hiragino Sans'', sans-serif'
+  body: '''Avenir Next'', ''Hiragino Sans'', sans-serif'
+layout:
+  h1_deco: left-bar
+  h1_deco_width: 8
+  h1_deco_color: accent
+  title_bg: white
+  title_align: left
+  divider_align: left
+  end_bg: white
+  box_style: filled
+  box_radius: 0.04
+  box_fill: true
+  spacing: normal

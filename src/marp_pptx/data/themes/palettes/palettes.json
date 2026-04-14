@@ -1,0 +1,112 @@
+[
+  {
+    "name": "mono",
+    "desc": "Monochrome — 黒基調、クールな青灰アクセント",
+    "primary": "#1a1a1a",
+    "secondary": "#3d5a80",
+    "accent": "#e07a5f",
+    "fg": "#1a1a1a",
+    "muted": "#999999",
+    "light": "#f7f7f7",
+    "border": "#e0e0e0"
+  },
+  {
+    "name": "navy",
+    "desc": "Navy — 深い紺、暖かいコーラルのポイント",
+    "primary": "#0d1b2a",
+    "secondary": "#1b4965",
+    "accent": "#f4845f",
+    "fg": "#1a1a2e",
+    "muted": "#8898aa",
+    "light": "#f0f4f8",
+    "border": "#d9e2ec"
+  },
+  {
+    "name": "forest",
+    "desc": "Forest — 深緑、ウォームベージュのアクセント",
+    "primary": "#1b3a2d",
+    "secondary": "#2d6a4f",
+    "accent": "#d4a373",
+    "fg": "#1a2e1a",
+    "muted": "#7a9a7a",
+    "light": "#f0f5f0",
+    "border": "#d4e0d4"
+  },
+  {
+    "name": "wine",
+    "desc": "Wine — ワインレッド、ゴールドのポイント",
+    "primary": "#2b0f1b",
+    "secondary": "#7a2048",
+    "accent": "#c9a227",
+    "fg": "#2b1a1a",
+    "muted": "#9a7a7a",
+    "light": "#faf5f5",
+    "border": "#e8d8d8"
+  },
+  {
+    "name": "earth",
+    "desc": "Earth — アースカラー、暖かみのある茶系",
+    "primary": "#2c1810",
+    "secondary": "#8b6f47",
+    "accent": "#cb997e",
+    "fg": "#2a2018",
+    "muted": "#a09080",
+    "light": "#f8f5f0",
+    "border": "#e8e0d0"
+  },
+  {
+    "name": "ocean",
+    "desc": "Ocean — 深海ブルー、オレンジのアクセント",
+    "primary": "#0a1628",
+    "secondary": "#1d6fa5",
+    "accent": "#ff9e6d",
+    "fg": "#0f1a2e",
+    "muted": "#7a8fa5",
+    "light": "#f0f5fa",
+    "border": "#d0dde8"
+  },
+  {
+    "name": "violet",
+    "desc": "Violet — 紫基調、ピンクのポイント",
+    "primary": "#1a0a2e",
+    "secondary": "#5c4d7d",
+    "accent": "#e6739f",
+    "fg": "#1a1a2e",
+    "muted": "#8a7aa0",
+    "light": "#f5f0fa",
+    "border": "#e0d8e8"
+  },
+  {
+    "name": "slate",
+    "desc": "Slate — 青灰スレート、ミントのアクセント",
+    "primary": "#2f3e46",
+    "secondary": "#52796f",
+    "accent": "#84a98c",
+    "fg": "#2f3e46",
+    "muted": "#8a9a90",
+    "light": "#f2f5f3",
+    "border": "#d8e0dc"
+  },
+  {
+    "name": "copper",
+    "desc": "Copper — 銅色ベース、ゴールドのアクセント",
+    "primary": "#1c1410",
+    "secondary": "#a0522d",
+    "accent": "#daa520",
+    "fg": "#2a1c10",
+    "muted": "#a09080",
+    "light": "#faf6f0",
+    "border": "#e8dcd0"
+  },
+  {
+    "name": "ink",
+    "desc": "Ink — インク紺、赤のポイント",
+    "primary": "#0f0a1a",
+    "secondary": "#2d3a8c",
+    "accent": "#e8505b",
+    "fg": "#141028",
+    "muted": "#7a7aa0",
+    "light": "#f2f0fa",
+    "border": "#d8d0e8"
+  }
+]
