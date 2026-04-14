@@ -283,14 +283,12 @@ class PptxBuilder:
     def _estimate_text_height(self, lines, size):
         """Tight height for a block of markdown lines at given font size.
 
-        Matches PowerPoint's natural line-box rendering so the textbox hugs
-        its content with no trailing blank line. SHAPE_TO_FIT_TEXT can still
-        grow the shape if the estimate falls short.
+        Slightly over-estimates so the shape hugs content but never clips.
         """
         from pptx.util import Pt as _Pt
         base = size.pt if hasattr(size, "pt") else float(size)
         scale = getattr(self.theme, "font_scale", 1.0)
-        line_h = base * 1.22 * scale  # PPT's typical line leading
+        line_h = base * 1.25 * scale
         total = 0.0
         first = True
         for line in lines:
@@ -298,13 +296,14 @@ class PptxBuilder:
             if not s:
                 continue
             if s.startswith(("## ", "### ")):
-                total += line_h * 1.3
+                total += line_h * 1.35
             else:
                 total += line_h
             if not first:
-                total += 4 * scale  # space_before only between paragraphs
+                total += 4 * scale
             first = False
-        return _Pt(max(18, total + 2))
+        # +6pt tail breathing room to prevent clipping when autofit is off
+        return _Pt(max(18, total + 6))
 
     def _add_body_text(self, slide, lines, left=None, top=None, width=None, height=None, size=None):
         if size is None:
@@ -384,7 +383,10 @@ class PptxBuilder:
         run.text = text
         run.font.name = self.FONT_MONO if mono else self.FONT
         run.font.size = self._fs(size) if hasattr(size, "pt") else size
-        if color is not None:
+        if mono:
+            # Make inline code visually distinct from prose.
+            run.font.color.rgb = self.SECONDARY
+        elif color is not None:
             run.font.color.rgb = color
         if bold:
             run.font.bold = True
@@ -619,8 +621,13 @@ class PptxBuilder:
             # Hug content height (capped at remaining), don't force full column
             estimated = self._estimate_text_height(text_lines, size)
             use_h = min(int(remaining_h), int(estimated))
-            self._add_body_text(slide, text_lines, left=left, top=int(cur_top),
-                               width=int(width), height=use_h, size=size)
+            tb = self._add_body_text(slide, text_lines, left=left, top=int(cur_top),
+                                     width=int(width), height=use_h, size=size)
+            # Lock the column textbox size — some viewers (Keynote, LibreOffice)
+            # ignore spAutoFit and render the stored height. Disable autofit so
+            # the zone stays predictable for downstream placement.
+            if tb is not None:
+                tb.text_frame.auto_size = MSO_AUTO_SIZE.NONE
 
     # ══════════════════════════════════════════════
     # Slide type builders
