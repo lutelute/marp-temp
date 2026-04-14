@@ -347,49 +347,60 @@ class PptxBuilder:
         tf.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
         return tb
 
+    def _add_plain_run(self, para, text, size, color, bold=False, mono=False):
+        """Append a single styled run to para. No-op if text is empty."""
+        if not text:
+            return
+        run = para.add_run()
+        run.text = text
+        run.font.name = self.FONT_MONO if mono else self.FONT
+        run.font.size = self._fs(size) if hasattr(size, "pt") else size
+        if color is not None:
+            run.font.color.rgb = color
+        if bold:
+            run.font.bold = True
+
+    # Combined inline markup: **bold**, `code`, $math$
+    _RICH_PATTERN = re.compile(
+        r"(\*\*[^\*\n]+?\*\*)"
+        r"|(`[^`\n]+?`)"
+        r"|(\$[^\$\n]+?\$)"
+    )
+
     def _set_rich_text(self, para, text, size=None, color=None):
+        """Render inline markup in a SINGLE paragraph / SINGLE textbox.
+
+        Handles **bold**, `code` (monospace), and $math$ (OMML) without
+        breaking the containing textbox. Runs co-exist with Japanese+Latin
+        mixed text via the ea-font patch applied at save time.
+        """
         if size is None:
             size = SZ_BODY
         if color is None:
             color = self.FG
         para.clear()
-        parts = re.split(r"(\*\*.*?\*\*)", text)
-        for part in parts:
-            if part.startswith("**") and part.endswith("**"):
-                run = para.add_run()
-                run.text = part[2:-2]
-                run.font.name = self.FONT
-                run.font.size = size
-                run.font.color.rgb = color
-                run.font.bold = True
-            else:
-                run = para.add_run()
-                run.text = part
-                run.font.name = self.FONT
-                run.font.size = size
-                run.font.color.rgb = color
+        if not text:
+            return
 
+        pos = 0
+        for m in self._RICH_PATTERN.finditer(text):
+            if m.start() > pos:
+                self._add_plain_run(para, text[pos:m.start()], size, color)
+            if m.group(1):  # **bold**
+                self._add_plain_run(para, m.group(1)[2:-2], size, color, bold=True)
+            elif m.group(2):  # `code`
+                self._add_plain_run(para, m.group(2)[1:-1], size, color, mono=True)
+            elif m.group(3):  # $math$
+                latex = m.group(3)[1:-1]
+                if not self._append_math_omml_inline(para, latex, size, color):
+                    self._add_plain_run(para, m.group(3), size, color)
+            pos = m.end()
+        if pos < len(text):
+            self._add_plain_run(para, text[pos:], size, color)
+
+    # Backward-compatible alias for callers that used the math-only name
     def _set_text_with_inline_math(self, para, text, size, color):
-        para.clear()
-        parts = re.split(r'\$([^$]+)\$', text)
-        for i, chunk in enumerate(parts):
-            if not chunk:
-                continue
-            if i % 2 == 0:
-                run = para.add_run()
-                run.text = chunk
-                run.font.name = self.FONT
-                run.font.size = size
-                if color is not None:
-                    run.font.color.rgb = color
-            else:
-                if not self._append_math_omml_inline(para, chunk, size, color):
-                    run = para.add_run()
-                    run.text = chunk
-                    run.font.name = self.FONT
-                    run.font.size = size
-                    if color is not None:
-                        run.font.color.rgb = color
+        return self._set_rich_text(para, text, size=size, color=color)
 
     def _resolve_image(self, img_path: str) -> str | None:
         p = self.base_path / img_path

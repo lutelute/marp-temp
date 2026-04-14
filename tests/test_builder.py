@@ -63,6 +63,26 @@ def test_build_equation_slide():
     assert len(b.prs.slides) == 1
 
 
+def test_rich_text_mixes_bold_code_math_in_single_paragraph():
+    """Bold, inline code, and math should all co-exist in ONE paragraph."""
+    b = _make_builder()
+    sd = parse_slide(0, "# Mixed\n通常 **bold** and `code` and $x^2$ end")
+    b.build_default(sd)
+    # Find the body textbox (2nd+ shape)
+    found_bold = found_mono = False
+    for slide in b.prs.slides:
+        for sh in slide.shapes:
+            if sh.has_text_frame:
+                for para in sh.text_frame.paragraphs:
+                    for run in para.runs:
+                        if run.font.bold:
+                            found_bold = True
+                        if run.font.name and "Mono" in run.font.name:
+                            found_mono = True
+    assert found_bold, "bold run not found"
+    assert found_mono, "monospace run for `code` not found"
+
+
 def test_build_all_type_builders():
     """Smoke test: each registered builder runs without error on minimal input."""
     b = _make_builder()
