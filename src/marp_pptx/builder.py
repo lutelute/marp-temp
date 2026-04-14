@@ -311,14 +311,19 @@ class PptxBuilder:
         if left is None: left = MARGIN_L
         if top is None: top = BODY_TOP
         if width is None: width = CONTENT_W
+        explicit_height = height is not None
         if height is None:
-            # Hug the content instead of reserving the full body area
             estimated = self._estimate_text_height(lines, size)
             height = min(BODY_H, int(estimated))
 
         tb = self._add_textbox(slide, left, top, width, height)
         tf = tb.text_frame
         tf.word_wrap = True
+        # When the caller specified a height (zone reservation), lock the size
+        # so viewers that ignore spAutoFit don't grow the textbox and break
+        # downstream placement (conclusion boxes, footnotes, etc.).
+        if explicit_height:
+            tf.auto_size = MSO_AUTO_SIZE.NONE
 
         first = True
         for line in lines:
@@ -372,7 +377,9 @@ class PptxBuilder:
                 self._set_rich_text(p, s, size, self.FG)
                 p.space_before = Pt(4)
 
-        tf.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
+        # Only enable autofit when caller left sizing to us
+        if not explicit_height:
+            tf.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
         return tb
 
     def _add_plain_run(self, para, text, size, color, bold=False, mono=False):
