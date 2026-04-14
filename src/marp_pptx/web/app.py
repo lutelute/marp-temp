@@ -119,6 +119,8 @@ body { font-family: -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif; back
 .array-item .remove-btn:hover { background: #fce4e4; }
 .add-item-btn { margin-top: 8px; background: #eef; color: #1a1a1a; border: 1px dashed #88c; padding: 8px 14px; border-radius: 3px; cursor: pointer; font-size: 0.85em; }
 .add-item-btn:hover { background: #ccd; }
+.img-preview { max-width: 200px; max-height: 120px; margin-top: 6px; border: 1px solid #ddd; border-radius: 3px; display: block; }
+.img-preview-sm { max-width: 100px; max-height: 60px; margin-top: 4px; border: 1px solid #ddd; border-radius: 3px; display: block; }
 textarea#md-editor {
     flex: 1; width: 100%; border: none; padding: 16px 20px;
     font-family: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -996,9 +998,16 @@ function buildFormHtml(schema) {
 
 function buildFieldHtml(f, value, path) {
     if (f.type === 'text') {
+        // Image-ish fields (by naming convention) get an upload button
+        const isImg = /^(image|figure)$/.test(f.name) || f.type === 'image';
         return `<div class="form-row">
             <label>${f.label}</label>
-            <input type="text" value="${escAttr(value||'')}" oninput="setField('${path}', this.value)">
+            <div style="display:flex; gap:6px; align-items:center">
+                <input type="text" value="${escAttr(value||'')}" oninput="setField('${path}', this.value); previewImgAt('${path}', this.value)" style="flex:1" id="fld-${path.replace(/[\\[\\].]/g,'_')}">
+                ${isImg ? `<button type="button" onclick="document.getElementById('imgup-${path.replace(/[\\[\\].]/g,'_')}').click()" style="padding:6px 10px">📎 選択</button>` : ''}
+                ${isImg ? `<input type="file" id="imgup-${path.replace(/[\\[\\].]/g,'_')}" accept="image/*" style="display:none" onchange="handleImageUpload('${path}', this)">` : ''}
+            </div>
+            ${isImg && value ? `<img src="${imgToUrl(value)}" class="img-preview" alt="preview">` : ''}
             ${f.hint ? `<div class="hint">${f.hint}</div>` : ''}
         </div>`;
     } else if (f.type === 'textarea') {
@@ -1026,12 +1035,19 @@ function buildArrayItemHtml(f, item, path, index) {
     const sub = f.subfields.map(sf => {
         const val = item[sf.name] || '';
         const subPath = `${path}[${index}].${sf.name}`;
+        const safeId = subPath.replace(/[\\[\\].]/g, '_');
         if (sf.type === 'checkbox') {
             return `<label style="font-size:0.8em"><input type="checkbox" ${item[sf.name]?'checked':''} onchange="setField('${subPath}', this.checked)"> ${sf.label}</label>`;
         }
+        const isImg = /^(image|figure)$/.test(sf.name);
+        const pickerBtn = isImg ? ` <button type="button" style="padding:3px 8px; font-size:0.75em" onclick="document.getElementById('imgup-${safeId}').click()">📎</button><input type="file" id="imgup-${safeId}" accept="image/*" style="display:none" onchange="handleImageUpload('${subPath}', this)">` : '';
+        const imgPreview = isImg && val ? `<img src="${imgToUrl(val)}" class="img-preview-sm" alt="">` : '';
         return `<div>
             <label style="font-size:0.75em; margin-bottom:2px">${sf.label}</label>
-            <input type="text" value="${escAttr(val)}" oninput="setField('${subPath}', this.value)" style="padding:5px 8px">
+            <div style="display:flex; gap:4px; align-items:center">
+                <input type="text" value="${escAttr(val)}" oninput="setField('${subPath}', this.value)" style="padding:5px 8px; flex:1">${pickerBtn}
+            </div>
+            ${imgPreview}
         </div>`;
     }).join('');
     return `<div class="array-item">
@@ -1039,6 +1055,34 @@ function buildArrayItemHtml(f, item, path, index) {
         <button type="button" class="remove-btn" onclick="removeArrayItem('${path}', ${index})">×</button>
     </div>`;
 }
+
+function imgToUrl(value) {
+    if (!value) return '';
+    // If it's our assets/xxx.yyy path, resolve to /editor/asset/xxx.yyy
+    const m = /^assets\\/(.+)$/.exec(value);
+    if (m) return '/editor/asset/' + m[1];
+    return value;  // leave as-is (relative to MD; may 404 in the preview)
+}
+
+async function handleImageUpload(path, inputEl) {
+    const f = inputEl.files[0];
+    if (!f) return;
+    try {
+        const form = new FormData();
+        form.append('file', f);
+        const r = await fetch('/editor/upload-image', { method: 'POST', body: form });
+        if (!r.ok) throw new Error(await r.text());
+        const data = await r.json();
+        setField(path, data.path);
+        // Re-render the form to update the preview thumb
+        document.getElementById('form-body').innerHTML = buildFormHtml(TYPE_SCHEMAS[currentType]);
+    } catch(e) {
+        alert('画像アップロード失敗: ' + e.message);
+    }
+    inputEl.value = '';
+}
+
+function previewImgAt(path, value) { /* reserved */ }
 
 function escAttr(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
@@ -1756,7 +1800,8 @@ theme: academic
                 return jsonify({"slides": [f"/editor/preview-img/{key}/{p.name}" for p in pngs]})
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # Build PPTX
+        # Build PPTX (expose uploaded images via assets symlink)
+        _link_shared_assets_to(out_dir)
         md_path = out_dir / "slides.md"
         md_path.write_text(md_text, encoding="utf-8")
         tc = ThemeConfig.from_css(get_default_theme_path())
@@ -1786,6 +1831,56 @@ theme: academic
         if not png.exists():
             return "not found", 404
         return send_file(str(png), mimetype="image/png")
+
+    @app.route("/editor/upload-image", methods=["POST"])
+    def editor_upload_image():
+        """Receive an image upload, store in shared assets dir, return assets/<name>."""
+        f = request.files.get("file")
+        if not f:
+            return jsonify({"error": "no file"}), 400
+        name = (f.filename or "image").lower()
+        ext = name.rsplit(".", 1)[-1] if "." in name else ""
+        if ext not in ("png", "jpg", "jpeg", "gif", "svg", "webp"):
+            return jsonify({"error": "unsupported extension: " + ext}), 400
+
+        upload_dir = _PREVIEW_CACHE_DIR / "shared_assets"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        data = f.read()
+        digest = hashlib.md5(data).hexdigest()[:10]
+        safe_name = f"{digest}_{Path(name).stem[:40]}.{ext}"
+        dest = upload_dir / safe_name
+        dest.write_bytes(data)
+        return jsonify({
+            "path": f"assets/{safe_name}",
+            "url": f"/editor/asset/{safe_name}",
+        })
+
+    @app.route("/editor/asset/<name>")
+    def editor_asset_get(name: str):
+        if "/" in name or ".." in name:
+            return "bad path", 400
+        p = _PREVIEW_CACHE_DIR / "shared_assets" / name
+        if not p.exists():
+            return "not found", 404
+        return send_file(str(p))
+
+    def _link_shared_assets_to(out_dir: Path):
+        """Symlink uploaded assets into out_dir/assets/ so the builder can resolve
+        'assets/foo.png' paths during PPTX generation.
+        """
+        src = _PREVIEW_CACHE_DIR / "shared_assets"
+        if not src.exists():
+            return
+        dst = out_dir / "assets"
+        if dst.exists():
+            return
+        try:
+            dst.symlink_to(src, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            # fallback: copy (Windows etc.)
+            import shutil as _sh
+            _sh.copytree(src, dst)
 
     @app.route("/editor/generate", methods=["POST"])
     def editor_generate():
@@ -1911,6 +2006,9 @@ theme: academic
             tmpdir = Path(tempfile.mkdtemp())
             md_path = tmpdir / (f.filename or "slides.md")
             f.save(str(md_path))
+
+        # Expose uploaded images to the builder's base_path
+        _link_shared_assets_to(md_path.parent)
 
         tc = ThemeConfig.from_css(get_default_theme_path())
         tc.font_scale = max(0.5, min(2.0, font_scale))
