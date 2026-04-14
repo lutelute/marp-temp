@@ -68,7 +68,11 @@ body { font-family: -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif; back
 .preview-pane h3 { font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.05em; color: #666; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 .preview-pane .slide-thumb { background: white; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .preview-pane .slide-thumb img { width: 100%; display: block; border-radius: 4px 4px 0 0; }
-.preview-pane .slide-thumb .caption { padding: 6px 10px; font-size: 0.75em; color: #999; border-top: 1px solid #eee; }
+.preview-pane .slide-thumb .caption { padding: 6px 10px; font-size: 0.75em; color: #999; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.preview-pane .slide-thumb .slide-actions { display: flex; gap: 3px; }
+.preview-pane .slide-thumb .slide-action-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 2px 6px; border-radius: 2px; font-size: 0.85em; cursor: pointer; min-width: 22px; color: #555; }
+.preview-pane .slide-thumb .slide-action-btn:hover { background: #ddd; color: #1a1a1a; }
+.preview-pane .slide-thumb .slide-action-btn.delete:hover { background: #fce4e4; color: #c62828; border-color: #c62828; }
 .preview-empty { color: #999; font-size: 0.85em; text-align: center; padding: 40px 20px; }
 .preview-loading { color: #666; font-size: 0.85em; text-align: center; padding: 40px 20px; }
 .preview-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 4px 10px; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
@@ -159,7 +163,11 @@ button.primary:disabled { background: #999; cursor: wait; }
 <button onclick="insertSnippet('bullets')">箇条書き</button>
 <button onclick="insertSnippet('divider')">区切り</button>
 <span class="sep">|</span>
-<button onclick="if(confirm('エディタ内容を全削除しますか？')) document.getElementById('md-editor').value=''; updateStats();">全削除</button>
+<button onclick="downloadMd()" title="編集中のMarkdownを.mdファイルで保存">📥 MD保存</button>
+<button onclick="document.getElementById('md-upload').click()" title=".mdファイルを読み込んでエディタに展開">📤 MD読込</button>
+<input type="file" id="md-upload" accept=".md,.markdown,text/*" style="display:none" onchange="loadMdFile(event)">
+<span class="sep">|</span>
+<button onclick="if(confirm('エディタ内容を全削除しますか？')) { document.getElementById('md-editor').value=''; updateStats(); autoSave(); triggerAutoPreview(); }">全削除</button>
 </div>
 
 <!-- Type picker modal -->
@@ -1158,7 +1166,7 @@ async function refreshPreview() {
         panel.innerHTML = data.slides.map((url, i) => `
             <div class="slide-thumb">
                 <img src="${url}" alt="slide ${i+1}" loading="lazy">
-                <div class="caption">Slide ${i+1}</div>
+                <div class="caption"><span>Slide ${i+1}</span></div>
             </div>
         `).join('');
     } catch(e) {
@@ -1176,9 +1184,181 @@ function triggerAutoPreview() {
 }
 editor.addEventListener('input', triggerAutoPreview);
 
+// ── MD save / load ──
+function downloadMd() {
+    const md = editor.value;
+    if (!md.trim()) { setStatus('Markdownが空です', 'err'); return; }
+    const name = (document.getElementById('output-name').value || 'slides.pptx').replace(/\\.pptx$/, '.md');
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    setStatus('保存: ' + name, 'ok');
+}
+
+function loadMdFile(ev) {
+    const f = ev.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        if (editor.value.trim() && !confirm('現在の編集内容を破棄して読み込みますか？')) {
+            ev.target.value = ''; return;
+        }
+        editor.value = e.target.result;
+        // Adjust output filename to match the loaded file
+        const base = f.name.replace(/\\.(md|markdown)$/i, '');
+        document.getElementById('output-name').value = base + '_editable.pptx';
+        updateStats();
+        autoSave();
+        triggerAutoPreview();
+        setStatus('読込: ' + f.name, 'ok');
+        editor.scrollTop = 0;
+    };
+    reader.readAsText(f, 'utf-8');
+    ev.target.value = '';
+}
+
+// ── LocalStorage autosave ──
+const STORAGE_KEY = 'marp-pptx-editor-md';
+const STORAGE_SETTINGS = 'marp-pptx-editor-settings';
+
+function autoSave() {
+    try {
+        localStorage.setItem(STORAGE_KEY, editor.value);
+        localStorage.setItem(STORAGE_SETTINGS, JSON.stringify({
+            palette: document.getElementById('palette').value,
+            fontScale: fsRange.value,
+            outputName: document.getElementById('output-name').value,
+        }));
+    } catch (e) { /* ignore quota */ }
+}
+
+function restoreFromStorage() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && saved.trim()) {
+            editor.value = saved;
+        }
+        const s = localStorage.getItem(STORAGE_SETTINGS);
+        if (s) {
+            const o = JSON.parse(s);
+            if (o.palette) document.getElementById('palette').value = o.palette;
+            if (o.fontScale) { fsRange.value = o.fontScale; fsVal.textContent = parseFloat(o.fontScale).toFixed(2); }
+            if (o.outputName) document.getElementById('output-name').value = o.outputName;
+        }
+    } catch (e) { /* ignore */ }
+}
+
+// Save on every change (debounced)
+let saveTimer = null;
+editor.addEventListener('input', () => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(autoSave, 500);
+});
+['palette', 'output-name'].forEach(id => {
+    document.getElementById(id).addEventListener('change', autoSave);
+});
+fsRange.addEventListener('change', autoSave);
+
+// ── Slide jump / reorder / delete from preview ──
+function splitIntoSlides(md) {
+    // Returns array of {start, end, text} positions in the md string
+    const slides = [];
+    let pos = 0;
+    // Strip leading frontmatter
+    if (md.startsWith('---')) {
+        const fmEnd = md.indexOf('---', 3);
+        if (fmEnd !== -1) pos = fmEnd + 3;
+    }
+    const text = md.substring(pos);
+    const re = /\\n---\\n/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+        const body = text.substring(last, m.index);
+        if (body.trim()) slides.push({ start: pos + last, end: pos + m.index, text: body });
+        last = m.index + m[0].length;
+    }
+    const body = text.substring(last);
+    if (body.trim()) slides.push({ start: pos + last, end: pos + text.length, text: body });
+    return slides;
+}
+
+function jumpToSlide(index) {
+    const md = editor.value;
+    const slides = splitIntoSlides(md);
+    if (index < 0 || index >= slides.length) return;
+    const s = slides[index];
+    editor.focus();
+    editor.setSelectionRange(s.start, s.end);
+    // Scroll to the location
+    const before = md.substring(0, s.start);
+    const lineCount = (before.match(/\\n/g) || []).length;
+    const lineHeight = 13 * 1.6;
+    editor.scrollTop = Math.max(0, lineCount * lineHeight - 80);
+}
+
+function deleteSlide(index) {
+    if (!confirm(`Slide ${index+1} を削除しますか？`)) return;
+    const md = editor.value;
+    const slides = splitIntoSlides(md);
+    if (index < 0 || index >= slides.length) return;
+    const s = slides[index];
+    // Remove the slide body plus a neighboring `---` separator
+    let left = s.start;
+    let right = s.end;
+    // If there's a `---` separator right after (between this and next), include it
+    if (md.substring(right, right + 5) === '\\n---\\n') right += 5;
+    else if (left >= 5 && md.substring(left - 5, left) === '\\n---\\n') left -= 5;
+    editor.value = md.substring(0, left) + md.substring(right);
+    updateStats(); autoSave(); triggerAutoPreview();
+}
+
+function moveSlide(index, direction) {
+    const md = editor.value;
+    const slides = splitIntoSlides(md);
+    const target = index + direction;
+    if (target < 0 || target >= slides.length || index < 0 || index >= slides.length) return;
+    // Rebuild MD with slides in new order
+    const frontmatter = md.startsWith('---') ? md.substring(0, md.indexOf('---', 3) + 3) : '';
+    const newOrder = [...slides];
+    [newOrder[index], newOrder[target]] = [newOrder[target], newOrder[index]];
+    const rebuilt = frontmatter + '\\n\\n' + newOrder.map(s => s.text.trim()).join('\\n\\n---\\n\\n') + '\\n';
+    editor.value = rebuilt;
+    updateStats(); autoSave(); triggerAutoPreview();
+}
+
+// Override refreshPreview to decorate each slide thumb with buttons
+const _origRefreshPreview = refreshPreview;
+refreshPreview = async function() {
+    await _origRefreshPreview();
+    // Add buttons if not present
+    const panel = document.getElementById('preview-content');
+    const thumbs = panel.querySelectorAll('.slide-thumb');
+    thumbs.forEach((thumb, i) => {
+        const caption = thumb.querySelector('.caption');
+        if (!caption || caption.querySelector('.slide-actions')) return;
+        const actions = document.createElement('div');
+        actions.className = 'slide-actions';
+        actions.innerHTML = `
+            <button class="slide-action-btn" onclick="jumpToSlide(${i})" title="MDのこのスライドへジャンプ">↵</button>
+            <button class="slide-action-btn" onclick="moveSlide(${i}, -1)" title="上に移動">↑</button>
+            <button class="slide-action-btn" onclick="moveSlide(${i}, 1)" title="下に移動">↓</button>
+            <button class="slide-action-btn delete" onclick="deleteSlide(${i})" title="削除">×</button>
+        `;
+        caption.appendChild(actions);
+        const img = thumb.querySelector('img');
+        if (img) { img.style.cursor = 'pointer'; img.onclick = () => jumpToSlide(i); }
+    });
+};
+
 // Initialize
 loadTypeMeta();
+restoreFromStorage();
 updateStats();
+if (editor.value.trim()) triggerAutoPreview();
 </script>
 </body>
 </html>"""
