@@ -281,28 +281,30 @@ class PptxBuilder:
         return p
 
     def _estimate_text_height(self, lines, size):
-        """Rough height for a block of markdown lines at given font size.
+        """Tight height for a block of markdown lines at given font size.
 
-        Used as initial textbox height so the shape hugs its content. Without
-        this, starting at BODY_H and relying on auto_size keeps the shape
-        oversized in PowerPoint (SHAPE_TO_FIT_TEXT only grows, doesn't shrink
-        once the shape is saved at BODY_H).
+        Matches PowerPoint's natural line-box rendering so the textbox hugs
+        its content with no trailing blank line. SHAPE_TO_FIT_TEXT can still
+        grow the shape if the estimate falls short.
         """
         from pptx.util import Pt as _Pt
         base = size.pt if hasattr(size, "pt") else float(size)
         scale = getattr(self.theme, "font_scale", 1.0)
-        line_h = base * 1.45 * scale  # pt per line
+        line_h = base * 1.22 * scale  # PPT's typical line leading
         total = 0.0
+        first = True
         for line in lines:
             s = line.strip()
             if not s:
                 continue
             if s.startswith(("## ", "### ")):
-                total += line_h * 1.4  # heading slightly taller
+                total += line_h * 1.3
             else:
                 total += line_h
-            total += 4 * scale  # space_before
-        return _Pt(max(24, total + 10))
+            if not first:
+                total += 4 * scale  # space_before only between paragraphs
+            first = False
+        return _Pt(max(18, total + 2))
 
     def _add_body_text(self, slide, lines, left=None, top=None, width=None, height=None, size=None):
         if size is None:
@@ -636,9 +638,12 @@ class PptxBuilder:
         align = PP_ALIGN.CENTER if self.LAYOUT.title_align == "center" else PP_ALIGN.LEFT
         h_color = self.WHITE if is_dark else self.PRIMARY
         sub_color = RGBColor(0xCC, 0xCC, 0xCC) if is_dark else self.MUTED
-        tb = self._add_textbox(slide, Inches(1), Inches(1.5), SW - Inches(2), Inches(2))
+        # Tight title box: height fits the H1 line at 44pt
+        title_h = self._fs(Pt(44 * 1.3))  # one-line capacity
+        tb = self._add_textbox(slide, Inches(1), Inches(1.5), SW - Inches(2), int(title_h))
         tf = tb.text_frame
         tf.word_wrap = True
+        tf.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
         p = tf.paragraphs[0]
         p.text = sd.h1
         p.font.name = self.FONT_HEAD
@@ -646,9 +651,8 @@ class PptxBuilder:
         p.font.bold = True
         p.font.color.rgb = h_color
         p.alignment = align
-        tb2 = self._add_textbox(slide, Inches(1), Inches(3.2), SW - Inches(2), Inches(3.5))
-        tf2 = tb2.text_frame
-        tf2.word_wrap = True
+        # Subtitle box: tight height based on remaining line count
+        sub_top = Inches(1.5) + int(title_h) + Inches(0.2)
         remaining = []
         past_h1 = False
         for line in sd.raw.split("\n"):
@@ -661,19 +665,21 @@ class PptxBuilder:
                 continue
             if past_h1 and s:
                 remaining.append(strip_html(s))
-        first = True
-        for line in remaining:
-            if first:
-                p = tf2.paragraphs[0]
-                first = False
-            else:
-                p = tf2.add_paragraph()
-            p.text = line
-            p.font.name = self.FONT
-            p.font.size = self._fs(Pt(20))
-            p.font.color.rgb = sub_color
-            p.alignment = align
-            p.space_before = Pt(6)
+        if remaining:
+            sub_h = self._fs(Pt(20 * 1.3)) * len(remaining) + Pt(6) * (len(remaining) - 1)
+            tb2 = self._add_textbox(slide, Inches(1), int(sub_top), SW - Inches(2), int(sub_h))
+            tf2 = tb2.text_frame
+            tf2.word_wrap = True
+            tf2.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
+            for i, line in enumerate(remaining):
+                p = tf2.paragraphs[0] if i == 0 else tf2.add_paragraph()
+                p.text = line
+                p.font.name = self.FONT
+                p.font.size = self._fs(Pt(20))
+                p.font.color.rgb = sub_color
+                p.alignment = align
+                if i > 0:
+                    p.space_before = Pt(6)
 
     def build_divider(self, sd: SlideData):
         slide = self._blank_slide()
@@ -1123,8 +1129,13 @@ class PptxBuilder:
         elif self.LAYOUT.end_bg == "light":
             self._set_bg(slide, self.LIGHT)
         is_dark = self.LAYOUT.end_bg == "dark"
-        tb = self._add_textbox(slide, Inches(1), Inches(2), SW - Inches(2), Inches(2))
+        # Tight box for the thank-you line, vertically centered on slide
+        end_h = self._fs(Pt(48 * 1.3))
+        tb_top = (SH - int(end_h)) // 2
+        tb = self._add_textbox(slide, Inches(1), tb_top, SW - Inches(2), int(end_h))
         tf = tb.text_frame
+        tf.word_wrap = True
+        tf.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
         p = tf.paragraphs[0]
         p.text = sd.h1 or "Thank You"
         p.font.name = self.FONT_HEAD
@@ -1138,9 +1149,12 @@ class PptxBuilder:
             if not s.startswith("#") and s:
                 remaining.append(strip_html(s))
         if remaining:
-            tb2 = self._add_textbox(slide, Inches(1), Inches(4), SW - Inches(2), Inches(2))
+            sub_h = self._fs(Pt(18 * 1.3)) * len(remaining) + Pt(4) * (len(remaining) - 1)
+            tb2 = self._add_textbox(slide, Inches(1), tb_top + int(end_h) + Inches(0.3),
+                                    SW - Inches(2), int(sub_h))
             tf2 = tb2.text_frame
             tf2.word_wrap = True
+            tf2.auto_size = MSO_AUTO_SIZE.SHAPE_TO_FIT_TEXT
             first = True
             for line in remaining:
                 p2 = tf2.paragraphs[0] if first else tf2.add_paragraph()
