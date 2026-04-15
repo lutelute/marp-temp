@@ -168,6 +168,8 @@ button.primary:disabled { background: #999; cursor: wait; }
 <button onclick="downloadMd()" title="編集中のMarkdownを.mdファイルで保存">📥 MD保存</button>
 <button onclick="document.getElementById('md-upload').click()" title=".mdファイルを読み込んでエディタに展開">📤 MD読込</button>
 <input type="file" id="md-upload" accept=".md,.markdown,text/*" style="display:none" onchange="loadMdFile(event)">
+<button onclick="document.getElementById('pptx-upload').click()" title="PPTXを読み込んでMD構造に変換">🔄 PPTX→MD</button>
+<input type="file" id="pptx-upload" accept=".pptx" style="display:none" onchange="loadPptxFile(event)">
 <span class="sep">|</span>
 <button onclick="if(confirm('エディタ内容を全削除しますか？')) { document.getElementById('md-editor').value=''; updateStats(); autoSave(); triggerAutoPreview(); }">全削除</button>
 </div>
@@ -1711,6 +1713,35 @@ function downloadMd() {
     setStatus('保存: ' + name, 'ok');
 }
 
+async function loadPptxFile(ev) {
+    const f = ev.target.files[0];
+    if (!f) return;
+    if (editor.value.trim() && !confirm('現在の編集内容を破棄してPPTXを読み込みますか？')) {
+        ev.target.value = ''; return;
+    }
+    setStatus('PPTX→MD変換中...', 'ok');
+    try {
+        const form = new FormData();
+        form.append('file', f);
+        const r = await fetch('/editor/pptx-to-md', { method: 'POST', body: form });
+        if (!r.ok) throw new Error(await r.text());
+        const data = await r.json();
+        editor.value = data.markdown;
+        const base = f.name.replace(/\\.pptx$/i, '');
+        document.getElementById('output-name').value = base + '_editable.pptx';
+        updateStats();
+        autoSave();
+        triggerAutoPreview();
+        // Show inference report
+        const inferred = data.slides.map((s, i) => `${i+1}: ${s.inferred_class || '(default)'}`).join(', ');
+        setStatus(`読込: ${f.name} — 推論型: ${inferred}`, 'ok');
+        editor.scrollTop = 0;
+    } catch(e) {
+        setStatus('PPTX読込失敗: ' + e.message, 'err');
+    }
+    ev.target.value = '';
+}
+
 function loadMdFile(ev) {
     const f = ev.target.files[0];
     if (!f) return;
@@ -2397,6 +2428,26 @@ theme: academic
         if not png.exists():
             return "not found", 404
         return send_file(str(png), mimetype="image/png")
+
+    @app.route("/editor/pptx-to-md", methods=["POST"])
+    def editor_pptx_to_md():
+        """Upload a PPTX, extract text+structure, return best-effort MD."""
+        from marp_pptx.pptx2md import pptx_to_md_with_report
+
+        f = request.files.get("file")
+        if not f:
+            return jsonify({"error": "no file"}), 400
+        tmpdir = Path(tempfile.mkdtemp(prefix="marp_pptx2md_"))
+        pptx_path = tmpdir / (f.filename or "input.pptx")
+        f.save(str(pptx_path))
+
+        # Extract images into the shared assets dir so the editor can reference them
+        assets_dir = _PREVIEW_CACHE_DIR / "shared_assets"
+        try:
+            report = pptx_to_md_with_report(pptx_path, extract_images_to=assets_dir)
+        except Exception as e:
+            return jsonify({"error": f"pptx parse failed: {e}"}), 500
+        return jsonify(report)
 
     @app.route("/editor/upload-image", methods=["POST"])
     def editor_upload_image():
