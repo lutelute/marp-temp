@@ -964,6 +964,412 @@ TYPE_SCHEMAS['equations'] = {
     },
 };
 
+// ── Reverse parser: MD slide text → form data ──
+// Helpers
+function _rxH1(t) { const m = /^#\\s+(.+)$/m.exec(t); return m ? m[1].trim() : ''; }
+function _rxH2(t) { const m = /^##\\s+(.+)$/m.exec(t); return m ? m[1].trim() : ''; }
+function _rxStripDirective(t) { return t.replace(/<!--\\s*_class:\\s*\\S+\\s*-->/, '').replace(/<!--\\s*_paginate:[^-]+-->/, ''); }
+function _rxDiv(t, cls) {
+    const re = new RegExp('<div\\\\s+class="[^"]*\\\\b' + cls + '\\\\b[^"]*">', 'i');
+    const m = re.exec(t);
+    if (!m) return null;
+    const start = m.index + m[0].length;
+    let depth = 1, pos = start;
+    while (pos < t.length && depth > 0) {
+        const no = t.indexOf('<div', pos);
+        const nc = t.indexOf('</div>', pos);
+        if (nc === -1) break;
+        if (no !== -1 && no < nc) { depth++; pos = no + 4; }
+        else { depth--; if (depth === 0) return t.substring(start, nc).trim(); pos = nc + 6; }
+    }
+    return null;
+}
+function _rxChildDivs(t) {
+    const results = [];
+    let pos = 0;
+    while (pos < t.length) {
+        const m = /<div[^>]*>/.exec(t.substring(pos));
+        if (!m) break;
+        const ds = pos + m.index + m[0].length;
+        let depth = 1, scan = ds;
+        while (scan < t.length && depth > 0) {
+            const no = t.indexOf('<div', scan);
+            const nc = t.indexOf('</div>', scan);
+            if (nc === -1) break;
+            if (no !== -1 && no < nc) { depth++; scan = no + 4; }
+            else {
+                depth--;
+                if (depth === 0) { results.push(t.substring(ds, nc).trim()); pos = nc + 6; break; }
+                scan = nc + 6;
+            }
+        }
+        if (depth !== 0) break;
+    }
+    return results;
+}
+function _rxSpan(t, cls) {
+    const re = new RegExp('<span[^>]*class="[^"]*\\\\b' + cls + '\\\\b[^"]*"[^>]*>([\\\\s\\\\S]*?)<\\\\/span>', 'i');
+    const m = re.exec(t);
+    return m ? _rxStripHtml(m[1]) : '';
+}
+function _rxLis(t) {
+    const results = [];
+    const re = /<li(\\s+class="([^"]+)")?>([\\s\\S]*?)<\\/li>/gi;
+    let m;
+    while ((m = re.exec(t)) !== null) {
+        results.push({ cls: m[2] || '', text: _rxStripHtml(m[3]) });
+    }
+    return results;
+}
+function _rxStripHtml(s) { return (s || '').replace(/<[^>]+>/g, '').trim(); }
+function _rxImage(t) { const m = /!\\[(?:w:(\\d+))?\\]\\(([^)]+)\\)/.exec(t); return m ? { path: m[2], width: m[1] || '' } : null; }
+function _rxMath(t, display) {
+    const re = display ? /\\$\\$([\\s\\S]+?)\\$\\$/ : /\\$([^$]+)\\$/;
+    const m = re.exec(t);
+    return m ? m[1].trim() : '';
+}
+
+// Main parser dispatcher
+function parseMdForType(cls, mdText) {
+    const t = mdText;
+    const h1 = _rxH1(t);
+    const h2 = _rxH2(t);
+    switch (cls) {
+        case 'title': {
+            const lines = t.split('\\n').map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('<!--'));
+            return { h1, h2, author: lines[0] || '', date: lines[1] || '' };
+        }
+        case 'divider': return { h1, h2 };
+        case 'end': {
+            const lines = t.split('\\n').map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('<!--'));
+            return { h1: h1 || 'Thank You', sub: lines[0] || '' };
+        }
+        case 'plain': {
+            const body = t.replace(/^#\\s+.+$/m, '').replace(/<!--[^>]*-->/g, '').trim();
+            return { h1, body };
+        }
+        case 'rq':
+            return { h1, main: _rxStripHtml(_rxDiv(t, 'rq-main') || ''), sub: _rxStripHtml(_rxDiv(t, 'rq-sub') || '') };
+        case 'quote':
+            return { h1, text: _rxStripHtml(_rxDiv(t, 'qt-text') || ''), source: _rxStripHtml(_rxDiv(t, 'qt-source') || '') };
+        case 'definition':
+            return { h1, term: _rxStripHtml(_rxDiv(t, 'df-term') || ''), body: _rxStripHtml(_rxDiv(t, 'df-body') || ''), note: _rxStripHtml(_rxDiv(t, 'df-note') || '') };
+        case 'highlight':
+            return { h1, text: _rxStripHtml(_rxDiv(t, 'hl-text') || '') };
+        case 'takeaway': {
+            const main = _rxStripHtml(_rxDiv(t, 'ta-main') || '');
+            const pts = _rxDiv(t, 'ta-points') || '';
+            return { h1, main, points: _rxLis(pts).map(li => ({ text: li.text })) };
+        }
+        case 'agenda': {
+            const block = _rxDiv(t, 'agenda-list') || '';
+            const items = [];
+            const re = /^\\s*\\d+\\.\\s+(.+)$/gm;
+            let m;
+            while ((m = re.exec(block)) !== null) items.push({ text: _rxStripHtml(m[1]) });
+            return { h1, items };
+        }
+        case 'summary': {
+            let block = _rxDiv(t, 'summary-points');
+            if (!block) {
+                const m = /<ol[^>]*class="[^"]*summary-points[^"]*"[^>]*>([\\s\\S]*?)<\\/ol>/i.exec(t);
+                block = m ? m[1] : '';
+            }
+            return { h1, items: _rxLis(block).map(li => ({ text: li.text })) };
+        }
+        case 'kpi': {
+            const container = _rxDiv(t, 'kpi-container') || '';
+            const items = _rxChildDivs(container).map(d => ({ value: _rxSpan(d, 'kpi-value'), label: _rxSpan(d, 'kpi-label') }));
+            return { h1, items };
+        }
+        case 'funnel': {
+            const container = _rxDiv(t, 'fn-container') || '';
+            const items = _rxChildDivs(container).map(d => ({ label: _rxSpan(d, 'fn-label'), value: _rxSpan(d, 'fn-value') }));
+            return { h1, items };
+        }
+        case 'pros-cons': {
+            const pros = _rxLis(_rxDiv(t, 'pc-pros') || '').map(li => ({ text: li.text }));
+            const cons = _rxLis(_rxDiv(t, 'pc-cons') || '').map(li => ({ text: li.text }));
+            return { h1, pros, cons };
+        }
+        case 'timeline-h': {
+            const container = _rxDiv(t, 'tl-h-container') || '';
+            const items = _rxChildDivs(container).map(d => {
+                const inner = _rxChildDivs(d)[0] || d;
+                return {
+                    year: _rxSpan(inner, 'tl-h-year'),
+                    text: _rxSpan(inner, 'tl-h-text'),
+                    highlight: /\\bhighlight\\b/.test(d.split('>')[0] || d),
+                };
+            });
+            return { h1, items };
+        }
+        case 'timeline': {
+            const container = _rxDiv(t, 'tl-container') || '';
+            const items = _rxChildDivs(container).map(d => ({
+                year: _rxSpan(d, 'tl-year'),
+                text: _rxSpan(d, 'tl-text'),
+                detail: _rxStripHtml(_rxDiv(d, 'tl-detail') || ''),
+                highlight: /\\bhighlight\\b/.test(d.split('>')[0] || d),
+            }));
+            return { h1, items };
+        }
+        case 'history': {
+            const container = _rxDiv(t, 'hs-container') || '';
+            const items = _rxChildDivs(container).map(d => ({ year: _rxSpan(d, 'hs-year'), event: _rxSpan(d, 'hs-event') }));
+            return { h1, items };
+        }
+        case 'checklist': {
+            const container = _rxDiv(t, 'cl-container') || '';
+            const items = _rxLis(container).map(li => ({ text: li.text, done: /\\bdone\\b/.test(li.cls) }));
+            return { h1, items };
+        }
+        case 'steps': {
+            const container = _rxDiv(t, 'st-container') || '';
+            const items = _rxChildDivs(container).map((d, i) => ({
+                num: _rxSpan(d, 'st-num') || String(i+1),
+                title: _rxSpan(d, 'st-title'),
+                body: _rxSpan(d, 'st-body'),
+            }));
+            return { h1, items };
+        }
+        case 'stack': {
+            const container = _rxDiv(t, 'sk-container') || '';
+            const items = _rxChildDivs(container).map(d => ({ name: _rxSpan(d, 'sk-name'), desc: _rxSpan(d, 'sk-desc') }));
+            return { h1, items };
+        }
+        case 'card-grid': {
+            const container = _rxDiv(t, 'cg-container') || '';
+            const items = _rxChildDivs(container).map(d => ({ title: _rxSpan(d, 'cg-title'), body: _rxSpan(d, 'cg-body') }));
+            return { h1, items };
+        }
+        case 'zone-flow': {
+            const container = _rxDiv(t, 'zf-container') || '';
+            const items = _rxChildDivs(container).map(d => ({ label: _rxSpan(d, 'zf-label'), body: _rxSpan(d, 'zf-body') }));
+            return { h1, items };
+        }
+        case 'zone-process': {
+            const container = _rxDiv(t, 'zp-container') || '';
+            const items = _rxChildDivs(container).map((d, i) => ({
+                step: _rxSpan(d, 'zp-num') || String(i+1),
+                title: _rxSpan(d, 'zp-title'),
+                body: _rxSpan(d, 'zp-body'),
+            }));
+            return { h1, items };
+        }
+        case 'zone-compare': {
+            const left = _rxDiv(t, 'zc-left') || '';
+            const right = _rxDiv(t, 'zc-right') || '';
+            const vs = _rxStripHtml(_rxDiv(t, 'zc-vs') || '') || 'VS';
+            return {
+                h1,
+                left_label: _rxSpan(left, 'zc-label'), left_body: _rxSpan(left, 'zc-body'),
+                right_label: _rxSpan(right, 'zc-label'), right_body: _rxSpan(right, 'zc-body'),
+                vs
+            };
+        }
+        case 'zone-matrix': {
+            const get = c => { const d = _rxDiv(t, c) || ''; return { label: _rxSpan(d, 'zm-label'), body: _rxSpan(d, 'zm-body') }; };
+            const tl = get('zm-tl'), tr = get('zm-tr'), bl = get('zm-bl'), br = get('zm-br');
+            return {
+                h1,
+                x_label: _rxStripHtml(_rxDiv(t, 'zm-xlabel') || ''),
+                y_label: _rxStripHtml(_rxDiv(t, 'zm-ylabel') || ''),
+                tl_label: tl.label, tl_body: tl.body,
+                tr_label: tr.label, tr_body: tr.body,
+                bl_label: bl.label, bl_body: bl.body,
+                br_label: br.label, br_body: br.body,
+            };
+        }
+        case 'before-after': {
+            const before = _rxDiv(t, 'ba-before') || '';
+            const after = _rxDiv(t, 'ba-after') || '';
+            return {
+                h1,
+                before_label: _rxSpan(before, 'ba-label'), before_body: _rxSpan(before, 'ba-body'),
+                after_label: _rxSpan(after, 'ba-label'), after_body: _rxSpan(after, 'ba-body'),
+            };
+        }
+        case 'split-text': {
+            const left = _rxDiv(t, 'sp-left') || '';
+            const right = _rxDiv(t, 'sp-right') || '';
+            return {
+                h1,
+                left_label: _rxSpan(left, 'sp-label'), left_body: _rxSpan(left, 'sp-body'),
+                right_label: _rxSpan(right, 'sp-label'), right_body: _rxSpan(right, 'sp-body'),
+            };
+        }
+        case 'cols-2': case 'cols-3': {
+            const cols = _rxDiv(t, 'columns') || '';
+            const children = _rxChildDivs(cols);
+            if (cls === 'cols-2') {
+                const [l, r] = [children[0] || '', children[1] || ''];
+                const parseH3 = s => { const m = /^###\\s+(.+)$/m.exec(s); return m ? m[1].trim() : ''; };
+                const stripH3 = s => s.replace(/^###\\s+.+$/m, '').trim();
+                return { h1, left_title: parseH3(l), left_body: stripH3(l), right_title: parseH3(r), right_body: stripH3(r) };
+            } else {
+                const parseH3 = s => { const m = /^###\\s+(.+)$/m.exec(s); return m ? m[1].trim() : ''; };
+                const stripH3 = s => s.replace(/^###\\s+.+$/m, '').trim();
+                return {
+                    h1,
+                    c1_title: parseH3(children[0] || ''), c1_body: stripH3(children[0] || ''),
+                    c2_title: parseH3(children[1] || ''), c2_body: stripH3(children[1] || ''),
+                    c3_title: parseH3(children[2] || ''), c3_body: stripH3(children[2] || ''),
+                };
+            }
+        }
+        case 'sandwich': {
+            const top = _rxDiv(t, 'top') || '';
+            const lead = _rxStripHtml(_rxDiv(top, 'lead') || top);
+            const cols = _rxDiv(t, 'columns') || '';
+            const children = _rxChildDivs(cols);
+            const parseH3 = s => { const m = /^###\\s+(.+)$/m.exec(s); return m ? m[1].trim() : ''; };
+            const stripH3 = s => s.replace(/^###\\s+.+$/m, '').trim();
+            const conclusion = _rxStripHtml(_rxDiv(_rxDiv(t, 'bottom') || '', 'conclusion') || '');
+            return {
+                h1, lead,
+                left_title: parseH3(children[0] || ''), left_body: stripH3(children[0] || ''),
+                right_title: parseH3(children[1] || ''), right_body: stripH3(children[1] || ''),
+                conclusion
+            };
+        }
+        case 'figure': {
+            const img = _rxImage(t);
+            return {
+                h1,
+                image: img ? img.path : '',
+                width: img ? img.width : '',
+                caption: _rxStripHtml(_rxDiv(t, 'caption') || ''),
+                desc: _rxStripHtml(_rxDiv(t, 'description') || ''),
+            };
+        }
+        case 'diagram': case 'panorama': {
+            const img = _rxImage(t);
+            const result = { h1, image: img ? img.path : '' };
+            if (cls === 'diagram') result.caption = _rxStripHtml(_rxDiv(t, 'caption') || '');
+            if (cls === 'panorama') result.text = _rxStripHtml(_rxDiv(t, 'pn-text') || '');
+            return result;
+        }
+        case 'annotation': {
+            const fig = _rxDiv(t, 'an-figure') || '';
+            const img = _rxImage(fig);
+            const notes = _rxLis(_rxDiv(t, 'an-notes') || '').map(li => ({ text: li.text }));
+            return { h1, image: img ? img.path : '', notes };
+        }
+        case 'gallery-img': {
+            const container = _rxDiv(t, 'gi-container') || '';
+            const items = _rxChildDivs(container).map(d => {
+                const img = _rxImage(d);
+                return { image: img ? img.path : '', caption: _rxStripHtml(_rxDiv(d, 'gi-caption') || '') };
+            });
+            return { h1, items };
+        }
+        case 'table-slide': {
+            const lines = t.split('\\n').filter(l => l.trim().startsWith('|'));
+            const note = _rxStripHtml(_rxDiv(t, 'box-accent') || '');
+            return { h1, table: lines.join('\\n'), note };
+        }
+        case 'overview': {
+            const img = _rxImage(t);
+            const points = _rxLis(_rxDiv(t, 'ov-points') || '').map(li => ({ text: li.text }));
+            return {
+                h1,
+                lead: _rxStripHtml(_rxDiv(t, 'ov-lead') || ''),
+                image: img ? img.path : '',
+                caption: _rxStripHtml(_rxDiv(t, 'caption') || ''),
+                points,
+            };
+        }
+        case 'result': {
+            const fig = _rxDiv(t, 'rs-figure') || '';
+            const img = _rxImage(fig);
+            const analysis = _rxLis(_rxDiv(t, 'rs-analysis') || '').map(li => ({ text: li.text }));
+            return {
+                h1,
+                lead: _rxStripHtml(_rxDiv(t, 'rs-lead') || ''),
+                figure: img ? img.path : '',
+                caption: _rxStripHtml(_rxDiv(fig, 'caption') || ''),
+                analysis,
+            };
+        }
+        case 'result-dual': {
+            const container = _rxDiv(t, 'results') || '';
+            const items = _rxChildDivs(container).map(d => {
+                const img = _rxImage(d);
+                return { image: img ? img.path : '', caption: _rxStripHtml(_rxDiv(d, 'caption') || '') };
+            });
+            return { h1, items };
+        }
+        case 'multi-result': {
+            const container = _rxDiv(t, 'mr-container') || '';
+            const items = _rxChildDivs(container).map(d => ({
+                metric: _rxSpan(d, 'mr-metric'),
+                value: _rxSpan(d, 'mr-value'),
+                desc: _rxSpan(d, 'mr-desc'),
+            }));
+            return { h1, items };
+        }
+        case 'references': {
+            const re = /<li>([\\s\\S]*?)<\\/li>/gi;
+            const items = []; let m;
+            while ((m = re.exec(t)) !== null) {
+                const inner = m[1];
+                const gs = (s, c) => { const mm = new RegExp('<span[^>]*class="' + c + '"[^>]*>([\\\\s\\\\S]*?)<\\\\/span>', 'i').exec(s); return mm ? _rxStripHtml(mm[1]) : ''; };
+                items.push({ author: gs(inner, 'author'), title: gs(inner, 'title'), venue: gs(inner, 'venue') });
+            }
+            return { h1, items };
+        }
+        case 'appendix': {
+            const lbl = /<span[^>]*class="[^"]*appendix-label[^"]*"[^>]*>([\\s\\S]*?)<\\/span>/i.exec(t);
+            let body = t.replace(/^#\\s+.+$/m, '').replace(/<!--[^>]*-->/g, '').replace(/<span[^>]*appendix-label[\\s\\S]*?<\\/span>/i, '').trim();
+            return { h1, label: lbl ? _rxStripHtml(lbl[1]) : 'APPENDIX', body };
+        }
+        case 'profile': {
+            const img = _rxImage(t);
+            const container = _rxDiv(t, 'pf-container') || '';
+            const bio = _rxLis(_rxDiv(container, 'pf-bio') || '').map(li => ({ text: li.text }));
+            return {
+                h1,
+                image: img ? img.path : '',
+                name: _rxStripHtml(_rxDiv(container, 'pf-name') || ''),
+                affiliation: _rxStripHtml(_rxDiv(container, 'pf-affiliation') || ''),
+                bio,
+            };
+        }
+        case 'equation': {
+            const main = _rxDiv(t, 'eq-main') || '';
+            const formula = _rxMath(main, true) || _rxStripHtml(main);
+            const desc = _rxDiv(t, 'eq-desc') || '';
+            const spans = [...desc.matchAll(/<span[^>]*>([\\s\\S]*?)<\\/span>/g)].map(m => _rxStripHtml(m[1]));
+            const vars = [];
+            for (let i = 0; i + 1 < spans.length; i += 2) {
+                vars.push({ sym: spans[i].replace(/^\\$|\\$$/g, ''), desc: spans[i+1] });
+            }
+            return { h1, formula, vars };
+        }
+        case 'equations': {
+            const sys = _rxDiv(t, 'eq-system') || '';
+            const rows = _rxChildDivs(sys).map(row => {
+                const lm = /<span[^>]*class="[^"]*label[^"]*"[^>]*>([\\s\\S]*?)<\\/span>/i.exec(row);
+                const eq = /\\$\\$([\\s\\S]+?)\\$\\$/.exec(row);
+                return { label: lm ? _rxStripHtml(lm[1]) : '', latex: eq ? eq[1].trim() : '' };
+            });
+            return { h1, rows };
+        }
+        case 'code': {
+            const cd = _rxDiv(t, 'cd-code') || '';
+            const m = /\\x60\\x60\\x60(\\w*)\\s*\\n([\\s\\S]*?)\\x60\\x60\\x60/.exec(cd);
+            return {
+                h1,
+                lang: m ? m[1] : 'python',
+                code: m ? m[2].replace(/\\s+$/, '') : _rxStripHtml(cd),
+                desc: _rxStripHtml(_rxDiv(t, 'cd-desc') || ''),
+            };
+        }
+    }
+    return null;
+}
+
 // ── Modal management ──
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -1170,13 +1576,27 @@ function rerenderArray(path) {
 function submitForm() {
     const schema = TYPE_SCHEMAS[currentType];
     const md = schema.toMd(currentData);
-    const sep = editor.value.trim() ? '\\n\\n---\\n\\n' : '';
-    editor.value += sep + md + '\\n';
+    const mode = document.querySelector('#form-modal .modal-footer .primary').getAttribute('data-mode');
+    if (mode === 'edit' && editingSlideIndex >= 0) {
+        // Replace the existing slide's MD with the regenerated form output
+        const all = editor.value;
+        const slides = splitIntoSlides(all);
+        const s = slides[editingSlideIndex];
+        if (s) {
+            editor.value = all.substring(0, s.start) + md + '\\n' + all.substring(s.end);
+        }
+        editingSlideIndex = -1;
+        document.querySelector('#form-modal .modal-footer .primary').textContent = 'スライドを追加';
+        document.querySelector('#form-modal .modal-footer .primary').removeAttribute('data-mode');
+    } else {
+        const sep = editor.value.trim() ? '\\n\\n---\\n\\n' : '';
+        editor.value += sep + md + '\\n';
+    }
     updateStats();
+    autoSave();
     triggerAutoPreview();
     closeModal('form-modal');
     editor.focus();
-    editor.scrollTop = editor.scrollHeight;
 }
 
 function insertSnippet(type) {
@@ -1394,13 +1814,50 @@ function jumpToSlide(index) {
 }
 
 let editingSlideIndex = -1;
-function editSlide(index) {
+function detectSlideType(mdText) {
+    const m = /<!--\\s*_class:\\s*(\\S+)\\s*-->/.exec(mdText);
+    return m ? m[1] : null;
+}
+
+function editSlide(index, forceRaw) {
     const md = editor.value;
     const slides = splitIntoSlides(md);
     if (index < 0 || index >= slides.length) return;
     editingSlideIndex = index;
-    document.getElementById('slide-edit-ta').value = slides[index].text.trim();
-    document.getElementById('slide-edit-idx').textContent = `Slide ${index + 1}`;
+    const text = slides[index].text.trim();
+    const cls = detectSlideType(text) || 'plain';
+    const schema = TYPE_SCHEMAS[cls];
+    if (!forceRaw && schema) {
+        // Try reverse-parse into form data
+        try {
+            const data = parseMdForType(cls, text);
+            if (data) {
+                currentType = cls;
+                currentData = data;
+                // Fill in defaults for any missing schema fields
+                schema.fields.forEach(f => {
+                    if (currentData[f.name] === undefined) {
+                        currentData[f.name] = f.default !== undefined
+                            ? (f.type === 'array' ? JSON.parse(JSON.stringify(f.default)) : f.default)
+                            : (f.type === 'array' ? [] : (f.type === 'checkbox' ? false : ''));
+                    }
+                });
+                document.getElementById('form-title').textContent = schema.label + ' を編集';
+                document.getElementById('form-body').innerHTML = buildFormHtml(schema) +
+                    `<div style="margin-top:16px; padding-top:12px; border-top:1px solid #eee; font-size:0.85em">
+                       <a href="javascript:void(0)" onclick="closeModal('form-modal'); editSlide(${index}, true)" style="color:#666">生MDで編集する</a>
+                     </div>`;
+                openModal('form-modal');
+                // Mark the form as "editing" mode
+                document.querySelector('#form-modal .modal-footer .primary').textContent = '保存';
+                document.querySelector('#form-modal .modal-footer .primary').setAttribute('data-mode', 'edit');
+                return;
+            }
+        } catch (e) { console.warn('fromMd failed:', e); }
+    }
+    // Fall back to raw MD editor
+    document.getElementById('slide-edit-ta').value = text;
+    document.getElementById('slide-edit-idx').textContent = `Slide ${index + 1} [${cls}]`;
     openModal('slide-edit-modal');
     setTimeout(() => document.getElementById('slide-edit-ta').focus(), 50);
 }
