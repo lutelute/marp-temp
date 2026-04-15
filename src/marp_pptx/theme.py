@@ -69,6 +69,10 @@ class ThemeConfig:
     # Scale multipliers (applied by builder)
     font_scale: float = 1.0
     margin_scale: float = 1.0
+    # Math rendering mode: "omml" (editable in PowerPoint, default) or
+    # "png" (matplotlib image — use for live-preview where the viewer
+    # has poor OMML support, e.g. LibreOffice).
+    math_mode: str = "omml"
     # Layout
     layout: ThemeLayout = field(default_factory=ThemeLayout)
 

@@ -93,6 +93,70 @@ marp: true
     assert all(src == "notes" for src in sources), f"expected all notes, got {sources}"
 
 
+def test_math_mode_png_produces_picture_not_omml(tmp_path: Path):
+    """theme.math_mode='png' forces matplotlib PNG fallback instead of OMML."""
+    import shutil
+    md = """---
+marp: true
+---
+
+<!-- _class: equation -->
+# F
+<div class="eq-main">
+$$E = mc^2$$
+</div>
+"""
+    # png mode
+    md_path = tmp_path / "in.md"
+    md_path.write_text(md, encoding="utf-8")
+    tc = ThemeConfig.from_css(get_default_theme_path())
+    tc.math_mode = "png"
+    slides = parse_marp(str(md_path))
+    b = PptxBuilder(base_path=tmp_path, theme=tc)
+    b.build_all(slides)
+    out = tmp_path / "png.pptx"
+    b.save(str(out))
+
+    # Inspect: should contain a picture shape and NO <a14:m> OMML element
+    import zipfile
+    with zipfile.ZipFile(str(out)) as z:
+        slide2 = z.read("ppt/slides/slide1.xml").decode(errors="ignore")
+    assert "a14:m" not in slide2, "OMML should not be emitted in png math_mode"
+    # Picture shape indicator: <p:pic>
+    assert "p:pic" in slide2, "expected a picture shape for math when math_mode=png"
+
+
+def test_math_mode_omml_is_default(tmp_path: Path):
+    """Default math_mode='omml' produces native OMML when Pandoc is available."""
+    import shutil
+    if shutil.which("pandoc") is None:
+        return  # skip — OMML requires pandoc
+    md = """---
+marp: true
+---
+
+<!-- _class: equation -->
+# F
+<div class="eq-main">
+$$E = mc^2$$
+</div>
+"""
+    md_path = tmp_path / "in.md"
+    md_path.write_text(md, encoding="utf-8")
+    tc = ThemeConfig.from_css(get_default_theme_path())
+    # Default math_mode should be 'omml'
+    assert tc.math_mode == "omml"
+    slides = parse_marp(str(md_path))
+    b = PptxBuilder(base_path=tmp_path, theme=tc)
+    b.build_all(slides)
+    out = tmp_path / "omml.pptx"
+    b.save(str(out))
+    import zipfile
+    with zipfile.ZipFile(str(out)) as z:
+        slide = z.read("ppt/slides/slide1.xml").decode(errors="ignore")
+    assert "a14:m" in slide, "expected native OMML element for default math_mode"
+
+
 def test_pptx2md_default_no_class_note_means_heuristic(tmp_path: Path):
     """Slides without an explicit _class should have note written as 'default'
     and pptx2md should recognize this as a null class (fall back to heuristic).

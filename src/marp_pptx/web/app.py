@@ -2388,7 +2388,7 @@ theme: academic
             font_scale = 1.0
 
         # Cache key based on content + settings
-        key_src = f"{md_text}|{palette_name}|{font_scale}".encode("utf-8")
+        key_src = f"{md_text}|{palette_name}|{font_scale}|math=png".encode("utf-8")
         key = hashlib.md5(key_src).hexdigest()
         out_dir = _PREVIEW_CACHE_DIR / key
         if out_dir.exists():
@@ -2403,6 +2403,10 @@ theme: academic
         md_path.write_text(md_text, encoding="utf-8")
         tc = ThemeConfig.from_css(get_default_theme_path())
         tc.font_scale = max(0.5, min(2.0, font_scale))
+        # Force PNG math in the preview: LibreOffice's OMML renderer is
+        # unreliable. The download path (_do_convert) keeps OMML for
+        # PowerPoint-native editability.
+        tc.math_mode = "png"
         if palette_name:
             pp = get_palette_path(palette_name)
             if pp:

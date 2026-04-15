@@ -121,6 +121,10 @@ class PptxBuilder:
 
     # ── Math helpers ──
     def _omml_element(self, latex: str, display: bool):
+        # Allow the theme to force PNG fallback (preview mode for viewers
+        # with poor OMML support like LibreOffice).
+        if getattr(self.theme, "math_mode", "omml") == "png":
+            return None
         try:
             return latex_to_omml_element(latex, display=display)
         except OmmlError as e:
